@@ -9,7 +9,7 @@
 
 #define REP 10
 
-void matrix_mult_basic(int m, int n, int p, float *A, float *B, float *C) {
+void inline matrix_mult_basic(int m, int n, int p, float *A, float *B, float *C) {
    int i, j, k;
 
    for(i=0; i<m; i++) {
@@ -23,27 +23,64 @@ void matrix_mult_basic(int m, int n, int p, float *A, float *B, float *C) {
    }
 }
 
-
-void matrix_mult(int m, int n, int p, float *A, float *B, float *C) {
+// already SIMD, 16 bytes(4 floats) in one instruction
+void inline matrix_mult_better(int m, int n, int p, float *A, float *B, float *C) {
    int i, j, k;
    for(int i=0;i<m*p;i++) C[i]=0;
 
    for(i=0; i<m; i++) 
       for(k=0; k<n; k++) 
-//#pragma vector aligned
-//#pragma simd
          for(j=0; j<p; j++) 
             C[i*p+j] += A[i*n+k]*B[k*p+j];
-      
-      
-   
 }
-//    for (i=0;i<n; i++)
-//       for (k=0;k<n; k++)
-// #pragma vector aligned
-// #pragma simd
-//          for (j = 0; j<n; j++)
-//             a[i][j] += b[i][k]* c[k][j] ;
+
+void inline matrix_mult(int m, int n, int p, float *A, float *B, float *C) {
+   int i, j, k, iInner, jInner, kInner ;
+   for(int i=0;i<m*p;i++) C[i]=0;
+   constexpr int blockSize = 4;
+   const int m_floor = m/4*4;
+   const int n_floor = n/4*4;
+   const int p_floor = p/4*4;
+//#pragma vector aligned
+   for (i = 0; i < m_floor; i+=blockSize)
+      for (k = 0 ; k < n_floor; k+=blockSize)
+         for (j=0; j<p_floor ; j+= blockSize)
+            for (iInner = i; iInner<i+blockSize; iInner++)
+               for (kInner = k ; kInner<k+blockSize ; kInner++)
+//#pragma vector aligned
+// pragma simd required
+#pragma omp simd
+                  for (jInner = j ; jInner<j+blockSize; jInner++)
+                        C[iInner*p + jInner] += A[iInner*n + kInner] * B[kInner*p + jInner] ;
+
+   // last few rows & cols, O(n^2) computation
+   for(i=m_floor; i<m; i++) 
+         for(k=0; k<n; k++) 
+            for(j=0; j<p; j++) 
+               C[i*p+j] += A[i*n+k]*B[k*p+j];
+
+   for(i=0; i<m_floor; i++) 
+         for(k=n_floor; k<n; k++) 
+            for(j=0; j<p; j++) 
+               C[i*p+j] += A[i*n+k]*B[k*p+j];
+
+   for(i=0; i<m_floor; i++) 
+         for(k=0; k<n_floor; k++) 
+            for(j=p_floor; j<p; j++) 
+               C[i*p+j] += A[i*n+k]*B[k*p+j];
+
+}
+
+void cmp(float* A, float* B, int length){
+   for(int i=0;i<length;i++){
+      if(A[i]!=B[i]){
+         printf("error in results!\n");
+         return;
+      }
+   }
+   printf("results OK!\n");
+}
+
 void generate_mat(int m, int n, int p, float *A, float *B) {
   int i;
 
@@ -203,6 +240,8 @@ int main (int argc, char** argv) {
 
  C = (float *)calloc(m*p,sizeof(float));
  if (C==NULL) {printf("Out of memory C1! \n"); exit(1);}
+ float *D = (float *)calloc(m*p,sizeof(float));
+ if (D==NULL) {printf("Out of memory C1! \n"); exit(1);}
 // C2 = (float *)calloc(N*P,sizeof(float));
 // if (C2==NULL) {printf("Out of memory C2! \n"); exit(1);}
 
@@ -212,7 +251,7 @@ int main (int argc, char** argv) {
 #endif
 
 for (r=0; r<REP; r++) 
- matrix_mult(m,n,p,A,B,C);
+   matrix_mult(m,n,p,A,B,C);
 
 #ifdef TIMING
   gettimeofday(&after, NULL);
@@ -220,6 +259,8 @@ for (r=0; r<REP; r++)
             (before.tv_sec + (before.tv_usec / 1000000.0)))/REP);
 
 #endif
+matrix_mult_basic(m,n,p,A,B,D);
+cmp(C,D, m*p);
 
 #ifdef GENERATE
  if ((fc = fopen("gen_result.mtx", "wt")) == NULL) exit(3); 
