@@ -25,19 +25,20 @@ void inline matrix_mult_basic(int m, int n, int p, float *A, float *B, float *C)
 }
 
 
-// already SIMD, 16 bytes(4 floats) in one instruction
-void inline matrix_mult_better(int m, int n, int p, float *A, float *B, float *C) {
+// better than block mult when running more threads
+void inline matrix_mult(int m, int n, int p, float *A, float *B, float *C) {
    int i, j, k;
    # pragma omp parallel for private(i)
    for(int i=0;i<m*p;i++) C[i]=0;
    # pragma omp parallel for private(i,j,k)
    for(i=0; i<m; i++) 
       for(k=0; k<n; k++) 
+      #pragma omp simd
          for(j=0; j<p; j++) 
             C[i*p+j] += A[i*n+k]*B[k*p+j];
 }
 
-void inline matrix_mult(int m, int n, int p, float *A, float *B, float *C) {
+void inline matrix_mult_block(int m, int n, int p, float *A, float *B, float *C) {
    int i, j, k, iInner, jInner, kInner ;
    # pragma omp parallel for private(i)
    for(int i=0;i<m*p;i++) C[i]=0;
@@ -61,14 +62,17 @@ void inline matrix_mult(int m, int n, int p, float *A, float *B, float *C) {
    // last few rows & cols, O(n^2) computation
    for(i=m_floor; i<m; i++) 
          for(k=0; k<n; k++) 
+         # pragma omp parallel for private(j)
             for(j=0; j<p; j++) 
                C[i*p+j] += A[i*n+k]*B[k*p+j];
 
+# pragma omp parallel for private(i,j,k)
    for(i=0; i<m_floor; i++) 
          for(k=n_floor; k<n; k++) 
             for(j=0; j<p; j++) 
                C[i*p+j] += A[i*n+k]*B[k*p+j];
 
+# pragma omp parallel for private(i,j,k)
    for(i=0; i<m_floor; i++) 
          for(k=0; k<n_floor; k++) 
             for(j=p_floor; j<p; j++) 
@@ -207,7 +211,7 @@ int main (int argc, char** argv) {
 #ifdef GENERATE 
  m=M; n=N; p=P;
 #else 
- if (argc < 3) {
+ if (argc < 4) {
     fprintf(stderr, "Usage: %s [martix1] [matrix2] [resultmatrix] [proc_count]\n", argv[0]);
     exit(1);
  }
@@ -220,7 +224,7 @@ int main (int argc, char** argv) {
 	fclose(fa); fclose(fb); 
 	exit(1);
     }
-   if(argc>3) proc_count = atoi(argv[3]);
+    proc_count = atoi(argv[4]);
  }
 #endif
 omp_set_num_threads(proc_count);
