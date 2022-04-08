@@ -25,9 +25,73 @@ __global__ void matrix_mult_kernel(int m, int n, int p, float *A, float *B, floa
 
 
 
-void inline matrix_mult(int m, int n, int p, float *A, float *B, float *C) {
-   int i, j, k;
+void inline matrix_mult_cuda(int m, int n, int p, float *A, float *B, float *C) {
+   // int i, j, k;
    dim3 numBlocks(m,(p+threadBlockSize-1)/threadBlockSize);
+
+   float *A_device, *B_device, *C_device;
+struct timeval before, after;
+   cudaMalloc((void **)&A_device, m*n*sizeof(float));
+   cudaMalloc((void **)&B_device, n*p*sizeof(float));
+   cudaMalloc((void **)&C_device, m*p*sizeof(float));
+   // cudaMemset(C_device, 0, m*p*sizeof(float));
+   cudaMemcpy(A_device, A, m*n*sizeof(float), cudaMemcpyHostToDevice);
+   cudaMemcpy(B_device, B, n*p*sizeof(float), cudaMemcpyHostToDevice);
+gettimeofday(&before, NULL);
+   matrix_mult_kernel<<<numBlocks, threadBlockSize>>>(m,n,p,A_device,B_device,C_device);
+   cudaDeviceSynchronize();
+gettimeofday(&after, NULL);
+printf("Computation time: %10.2f seconds \n", ((after.tv_sec + (after.tv_usec / 1000000.0)) -
+            (before.tv_sec + (before.tv_usec / 1000000.0))));
+   cudaMemcpy(C, C_device, m*p*sizeof(float), cudaMemcpyDeviceToHost);
+   cudaFree(A_device);
+   cudaFree(B_device);
+   cudaFree(C_device);
+}
+
+constexpr int blockWidth = 16;
+
+__global__ void matrix_mult_block_kernel(int m, int n, int p, float *A, float *B, float *C)
+{
+    __shared__ float block_A[blockWidth][blockWidth];
+    __shared__ float block_B[blockWidth][blockWidth];
+   unsigned int j = blockIdx.x * blockWidth + threadIdx.x;
+   unsigned int i = blockIdx.y * blockWidth + threadIdx.y;
+   
+   float res = 0.0;
+   int n_floor = n/blockWidth * blockWidth;
+   for(int b = 0; b < n_floor; b+=blockWidth){
+      if(i<m){// && (b+threadIdx.y)<n){
+         block_A[threadIdx.y][threadIdx.x] = A[i*n + b + threadIdx.x];
+      }else{
+        block_A[threadIdx.y][threadIdx.x] = 0;
+      }
+
+      //if((b+threadIdx.x)<n && j<p){
+      if(j<p){
+         block_B[threadIdx.y][threadIdx.x] = B[(b+threadIdx.y)*p + j];
+      }else{
+         block_B[threadIdx.y][threadIdx.x] = 0;
+      }
+      __syncthreads();
+      for(int k=0; k<blockWidth; ++k){
+         res += block_A[threadIdx.y][k] * block_B[k][threadIdx.x];
+      }
+      __syncthreads();
+   }
+
+   if(i<m && j<p){
+      for(int k=n_floor;k<n;k++)
+         res += A[i*n+k]*B[k*p+j];
+      C[i*p + j] = res;
+   }
+}
+
+
+void inline matrix_mult(int m, int n, int p, float *A, float *B, float *C) {
+   // int i, j, k;
+   dim3 numThreads(blockWidth, blockWidth);
+   dim3 numBlocks((p+blockWidth-1)/blockWidth, (m+blockWidth-1)/blockWidth);
 
    float *A_device, *B_device, *C_device;
 // struct timeval before, after;
@@ -38,7 +102,8 @@ void inline matrix_mult(int m, int n, int p, float *A, float *B, float *C) {
    cudaMemcpy(A_device, A, m*n*sizeof(float), cudaMemcpyHostToDevice);
    cudaMemcpy(B_device, B, n*p*sizeof(float), cudaMemcpyHostToDevice);
 // gettimeofday(&before, NULL);
-   matrix_mult_kernel<<<numBlocks, threadBlockSize>>>(m,n,p,A_device,B_device,C_device);
+   matrix_mult_block_kernel<<<numBlocks, numThreads>>>(m, n, p, A_device,B_device,C_device);
+
    cudaDeviceSynchronize();
 // gettimeofday(&after, NULL);
 // printf("Computation time: %10.2f seconds \n", ((after.tv_sec + (after.tv_usec / 1000000.0)) -
@@ -48,6 +113,7 @@ void inline matrix_mult(int m, int n, int p, float *A, float *B, float *C) {
    cudaFree(B_device);
    cudaFree(C_device);
 }
+
 
 void inline matrix_mult_basic(int m, int n, int p, float *A, float *B, float *C) {
    int i, j, k;
@@ -298,7 +364,6 @@ int main (int argc, char** argv) {
 
 for (r=0; r<REP; r++) 
    matrix_mult(m,n,p,A,B,C);
-
 #ifdef TIMING
   gettimeofday(&after, NULL);
   printf("Reference code: %10.2f seconds \n", ((after.tv_sec + (after.tv_usec / 1000000.0)) -
