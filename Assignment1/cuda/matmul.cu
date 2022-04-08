@@ -25,8 +25,8 @@ __global__ void matrix_mult_kernel(int m, int n, int p, float *A, float *B, floa
 
 
 
-void inline matrix_mult_cuda(int m, int n, int p, float *A, float *B, float *C) {
-   // int i, j, k;
+void inline matrix_mult(int m, int n, int p, float *A, float *B, float *C) {
+   int i, j, k;
    dim3 numBlocks(m,(p+threadBlockSize-1)/threadBlockSize);
 
    float *A_device, *B_device, *C_device;
@@ -48,72 +48,6 @@ void inline matrix_mult_cuda(int m, int n, int p, float *A, float *B, float *C) 
    cudaFree(B_device);
    cudaFree(C_device);
 }
-
-constexpr int blockWidth = 8;
-
-__global__ void matrix_mult_block_kernel(int m, int n, int p, float *A, float *B, float *C)
-{
-    __shared__ float block_A[blockWidth][blockWidth];
-    __shared__ float block_B[blockWidth][blockWidth];
-
-   unsigned int i = blockIdx.x * blockWidth + threadIdx.x;
-   unsigned int j = blockIdx.y * blockWidth + threadIdx.y;
-   int k;
-   float res = 0.0;
-   int n_floor = n/blockWidth * blockWidth;
-   for(int b = 0; b < n_floor; b+=blockWidth){
-      if(i<m){// && (b+threadIdx.y)<n){
-         block_A[threadIdx.x][threadIdx.y] = A[i*n + b + threadIdx.y];
-      }else{
-        block_A[threadIdx.x][threadIdx.y] = 0;
-      }
-
-      //if((b+threadIdx.x)<n && j<p){
-      if(j<p){
-         block_B[threadIdx.x][threadIdx.y] = B[(b+threadIdx.x)*p + j];
-      }else{
-         block_B[threadIdx.x][threadIdx.y] = 0;
-      }
-      __syncthreads();
-      for(k=0; k<blockWidth; k++){
-         res += block_A[threadIdx.x][k] * block_B[k][threadIdx.y];
-      }
-      __syncthreads();
-   }
-
-   if(i<m && j<p){
-      for(int k=n_floor;k<n;k++)
-         res += A[i*n+k]*B[k*p+j];
-      C[i*p + j] = res;
-   }
-}
-
-
-void inline matrix_mult(int m, int n, int p, float *A, float *B, float *C) {
-   // int i, j, k;
-   dim3 numThreads(blockWidth, blockWidth);
-   dim3 numBlocks((m+blockWidth-1)/blockWidth, (p+blockWidth-1)/blockWidth);
-
-   float *A_device, *B_device, *C_device;
-// struct timeval before, after;
-   cudaMalloc((void **)&A_device, m*n*sizeof(float));
-   cudaMalloc((void **)&B_device, n*p*sizeof(float));
-   cudaMalloc((void **)&C_device, m*p*sizeof(float));
-   // cudaMemset(C_device, 0, m*p*sizeof(float));
-   cudaMemcpy(A_device, A, m*n*sizeof(float), cudaMemcpyHostToDevice);
-   cudaMemcpy(B_device, B, n*p*sizeof(float), cudaMemcpyHostToDevice);
-// gettimeofday(&before, NULL);
-   matrix_mult_block_kernel<<<numBlocks, numThreads>>>(m,n,p,A_device,B_device,C_device);
-   cudaDeviceSynchronize();
-// gettimeofday(&after, NULL);
-// printf("Computation time: %10.2f seconds \n", ((after.tv_sec + (after.tv_usec / 1000000.0)) -
-//             (before.tv_sec + (before.tv_usec / 1000000.0))));
-   cudaMemcpy(C, C_device, m*p*sizeof(float), cudaMemcpyDeviceToHost);
-   cudaFree(A_device);
-   cudaFree(B_device);
-   cudaFree(C_device);
-}
-
 
 void inline matrix_mult_basic(int m, int n, int p, float *A, float *B, float *C) {
    int i, j, k;
@@ -374,8 +308,8 @@ for (r=0; r<REP; r++)
 
 // floating point error different in cpu and gpu. check algorithm by result is not feasible
 // double is more accurate than float. no fp error when using double.
-// matrix_mult_better(m,n,p,A,B,D);
-// cmp(C,D, m*p);
+//matrix_mult_better(m,n,p,A,B,D);
+//cmp(C,D, m*p);
 
 #ifdef GENERATE
  if ((fc = fopen("gen_result.mtx", "wt")) == NULL) exit(3); 
