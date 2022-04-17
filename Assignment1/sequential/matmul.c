@@ -255,7 +255,7 @@ for (r=0; r<REP; r++)
 
 #ifdef TIMING
   gettimeofday(&after, NULL);
-  printf("%f\n", ((after.tv_sec + (after.tv_usec / 1000000.0)) -
+  printf("%.6f\n", ((after.tv_sec + (after.tv_usec / 1000000.0)) -
             (before.tv_sec + (before.tv_usec / 1000000.0)))/REP);
 
 #endif

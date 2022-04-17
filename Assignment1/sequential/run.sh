@@ -13,10 +13,11 @@ for d in $(find "../data" -maxdepth 1 -type f)
 do 
     MTX=${d##*/}
     MTX=${MTX%%.*}
-    # prun -np 1 -v ./transpose ${d} tmp.mtx
+    # prun -np 1 -reserve $2 ./transpose ${d} tmp.mtx
     ./transpose ${d} tmp.mtx
     for ((i=1;i<=N_EXP;i++));
     do
+        #TIME=$(prun -np 1 -reserve $2 ./matmul $d tmp.mtx result.mtx)
         TIME=$(./matmul $d tmp.mtx result.mtx)
         echo $MTX,$1,$TIME
     done
