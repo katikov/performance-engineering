@@ -1,6 +1,6 @@
 # See LICENSE.txt for license details.
 
-CXX_FLAGS += -std=c++11 -O3 -Wall -ftree-vectorize 
+CXX_FLAGS += -std=c++11 -O3 -Wall -ftree-vectorize -march=native
 PAR_FLAG = -fopenmp
 #GENERATE = -D GENERATE
 GENERATE = 

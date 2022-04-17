@@ -25,8 +25,8 @@ void inline matrix_mult_basic(int m, int n, int p, float *A, float *B, float *C)
 }
 
 
-// better than block mult when running more threads
-void inline matrix_mult(int m, int n, int p, float *A, float *B, float *C) {
+
+void inline matrix_mult_better(int m, int n, int p, float *A, float *B, float *C) {
    int i, j, k;
    # pragma omp parallel for private(i)
    for(int i=0;i<m*p;i++) C[i]=0;
@@ -38,14 +38,14 @@ void inline matrix_mult(int m, int n, int p, float *A, float *B, float *C) {
             C[i*p+j] += A[i*n+k]*B[k*p+j];
 }
 
-void inline matrix_mult_block(int m, int n, int p, float *A, float *B, float *C) {
+void inline matrix_mult(int m, int n, int p, float *A, float *B, float *C) {
    int i, j, k, iInner, jInner, kInner ;
    # pragma omp parallel for private(i)
    for(int i=0;i<m*p;i++) C[i]=0;
-   constexpr int blockSize = 4;
-   const int m_floor = m/4*4;
-   const int n_floor = n/4*4;
-   const int p_floor = p/4*4;
+   constexpr int blockSize = 8;
+   const int m_floor = m/blockSize*blockSize;
+   const int n_floor = n/blockSize*blockSize;
+   const int p_floor = p/blockSize*blockSize;
 //#pragma vector aligned
    # pragma omp parallel for private(i,j,k)
    for (i = 0; i < m_floor; i+=blockSize)
@@ -60,9 +60,10 @@ void inline matrix_mult_block(int m, int n, int p, float *A, float *B, float *C)
                         C[iInner*p + jInner] += A[iInner*n + kInner] * B[kInner*p + jInner] ;
 
    // last few rows & cols, O(n^2) computation
+# pragma omp parallel for private(i,j,k)
    for(i=m_floor; i<m; i++) 
          for(k=0; k<n; k++) 
-         # pragma omp parallel for private(j)
+         //# pragma omp parallel for private(j)
             for(j=0; j<p; j++) 
                C[i*p+j] += A[i*n+k]*B[k*p+j];
 
@@ -271,8 +272,8 @@ for (r=0; r<REP; r++)
             (before.tv_sec + (before.tv_usec / 1000000.0)))/REP);
 
 #endif
-matrix_mult_basic(m,n,p,A,B,D);
-cmp(C,D, m*p);
+//matrix_mult_basic(m,n,p,A,B,D);
+//cmp(C,D, m*p);
 
 #ifdef GENERATE
  if ((fc = fopen("gen_result.mtx", "wt")) == NULL) exit(3); 

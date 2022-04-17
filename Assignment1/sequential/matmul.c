@@ -37,10 +37,10 @@ void inline matrix_mult_better(int m, int n, int p, float *A, float *B, float *C
 void inline matrix_mult(int m, int n, int p, float *A, float *B, float *C) {
    int i, j, k, iInner, jInner, kInner ;
    for(int i=0;i<m*p;i++) C[i]=0;
-   constexpr int blockSize = 4;
-   const int m_floor = m/4*4;
-   const int n_floor = n/4*4;
-   const int p_floor = p/4*4;
+   constexpr int blockSize = 8;
+   const int m_floor = m/blockSize*blockSize;
+   const int n_floor = n/blockSize*blockSize;
+   const int p_floor = p/blockSize*blockSize;
 //#pragma vector aligned
    for (i = 0; i < m_floor; i+=blockSize)
       for (k = 0 ; k < n_floor; k+=blockSize)
