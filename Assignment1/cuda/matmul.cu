@@ -9,6 +9,7 @@
 
 #define REP 10
 constexpr int threadBlockSize = 128;
+double computation_time = 0;
 
 __global__ void matrix_mult_kernel(int m, int n, int p, float *A, float *B, float *C)
 {
@@ -92,7 +93,7 @@ void inline matrix_mult(int m, int n, int p, float *A, float *B, float *C) {
    // int i, j, k;
    dim3 numThreads(blockWidth, blockWidth);
    dim3 numBlocks((p+blockWidth-1)/blockWidth, (m+blockWidth-1)/blockWidth);
-
+   struct timeval before, after;
    float *A_device, *B_device, *C_device;
 // struct timeval before, after;
    cudaMalloc((void **)&A_device, m*n*sizeof(float));
@@ -101,13 +102,15 @@ void inline matrix_mult(int m, int n, int p, float *A, float *B, float *C) {
    // cudaMemset(C_device, 0, m*p*sizeof(float));
    cudaMemcpy(A_device, A, m*n*sizeof(float), cudaMemcpyHostToDevice);
    cudaMemcpy(B_device, B, n*p*sizeof(float), cudaMemcpyHostToDevice);
-// gettimeofday(&before, NULL);
+   gettimeofday(&before, NULL);
    matrix_mult_block_kernel<<<numBlocks, numThreads>>>(m, n, p, A_device,B_device,C_device);
 
    cudaDeviceSynchronize();
-// gettimeofday(&after, NULL);
-// printf("Computation time: %10.2f seconds \n", ((after.tv_sec + (after.tv_usec / 1000000.0)) -
-//             (before.tv_sec + (before.tv_usec / 1000000.0))));
+   gettimeofday(&after, NULL);
+   computation_time += (after.tv_sec + (after.tv_usec / 1000000.0)) -
+                      (before.tv_sec + (before.tv_usec / 1000000.0));
+
+// printf("Computation time: %10.2f seconds \n", ));
    cudaMemcpy(C, C_device, m*p*sizeof(float), cudaMemcpyDeviceToHost);
    cudaFree(A_device);
    cudaFree(B_device);
@@ -366,8 +369,9 @@ for (r=0; r<REP; r++)
    matrix_mult(m,n,p,A,B,C);
 #ifdef TIMING
   gettimeofday(&after, NULL);
-  printf("Reference code: %10.2f seconds \n", ((after.tv_sec + (after.tv_usec / 1000000.0)) -
+  printf("Total exec  time: %.6f seconds \n", ((after.tv_sec + (after.tv_usec / 1000000.0)) -
             (before.tv_sec + (before.tv_usec / 1000000.0)))/REP);
+  printf("Computation time: %.6f seconds \n", computation_time/REP);
 
 #endif
 
