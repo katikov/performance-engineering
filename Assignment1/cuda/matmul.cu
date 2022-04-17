@@ -29,21 +29,20 @@ __global__ void matrix_mult_kernel(int m, int n, int p, float *A, float *B, floa
 void inline matrix_mult_cuda(int m, int n, int p, float *A, float *B, float *C) {
    // int i, j, k;
    dim3 numBlocks(m,(p+threadBlockSize-1)/threadBlockSize);
-
    float *A_device, *B_device, *C_device;
-struct timeval before, after;
+   struct timeval before, after;
    cudaMalloc((void **)&A_device, m*n*sizeof(float));
    cudaMalloc((void **)&B_device, n*p*sizeof(float));
    cudaMalloc((void **)&C_device, m*p*sizeof(float));
    // cudaMemset(C_device, 0, m*p*sizeof(float));
    cudaMemcpy(A_device, A, m*n*sizeof(float), cudaMemcpyHostToDevice);
    cudaMemcpy(B_device, B, n*p*sizeof(float), cudaMemcpyHostToDevice);
-gettimeofday(&before, NULL);
+   gettimeofday(&before, NULL);
    matrix_mult_kernel<<<numBlocks, threadBlockSize>>>(m,n,p,A_device,B_device,C_device);
    cudaDeviceSynchronize();
-gettimeofday(&after, NULL);
-printf("Computation time: %10.2f seconds \n", ((after.tv_sec + (after.tv_usec / 1000000.0)) -
-            (before.tv_sec + (before.tv_usec / 1000000.0))));
+   gettimeofday(&after, NULL);
+   computation_time += (after.tv_sec + (after.tv_usec / 1000000.0)) -
+                      (before.tv_sec + (before.tv_usec / 1000000.0));
    cudaMemcpy(C, C_device, m*p*sizeof(float), cudaMemcpyDeviceToHost);
    cudaFree(A_device);
    cudaFree(B_device);
