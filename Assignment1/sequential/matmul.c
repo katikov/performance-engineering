@@ -255,12 +255,12 @@ for (r=0; r<REP; r++)
 
 #ifdef TIMING
   gettimeofday(&after, NULL);
-  printf("Reference code: %10.2f seconds \n", ((after.tv_sec + (after.tv_usec / 1000000.0)) -
+  printf("%f\n", ((after.tv_sec + (after.tv_usec / 1000000.0)) -
             (before.tv_sec + (before.tv_usec / 1000000.0)))/REP);
 
 #endif
-matrix_mult_basic(m,n,p,A,B,D);
-cmp(C,D, m*p);
+// matrix_mult_basic(m,n,p,A,B,D);
+// cmp(C,D, m*p);
 
 #ifdef GENERATE
  if ((fc = fopen("gen_result.mtx", "wt")) == NULL) exit(3); 
