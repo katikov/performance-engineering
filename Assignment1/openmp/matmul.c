@@ -47,7 +47,7 @@ void inline matrix_mult(int m, int n, int p, float *A, float *B, float *C) {
    const int n_floor = n/blockSize*blockSize;
    const int p_floor = p/blockSize*blockSize;
 //#pragma vector aligned
-   # pragma omp parallel for private(i,j,k)
+   # pragma omp parallel for private(i,j,k,iInner,jInner,kInner)
    for (i = 0; i < m_floor; i+=blockSize)
       for (k = 0 ; k < n_floor; k+=blockSize)
          for (j=0; j<p_floor ; j+= blockSize)
