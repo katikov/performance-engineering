@@ -5,7 +5,7 @@
 
 #define N_EXP 30
 #define SAMPLE 100000000.0
-#define ARRARY_SIZE 1000000
+#define ARRARY_SIZE 10
 
 void inline atomic_add(size_t n, float a)
 {
@@ -102,6 +102,7 @@ void inline add_multiple(size_t n, float a, float b, float c, float d)
 
 int main(int argc, char **argv)
 {
+  printf("benchmark start");
   float a = atof(argv[1]);
   float b = atof(argv[2]);
   float c = atof(argv[3]);
