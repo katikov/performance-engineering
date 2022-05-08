@@ -61,7 +61,7 @@ void inline cache(size_t n, float *arrary)
   printf("%f\n", arrary[0]);
 }
 
-void inline add_single(size_t n, float a)
+float inline add_single(size_t n, float a)
 {
   printf("#add_single (ns)\n");
   struct timespec before, after;
@@ -77,9 +77,10 @@ void inline add_single(size_t n, float a)
     long long sec = (after.tv_sec - before.tv_sec) * 1000000000 + (after.tv_nsec - before.tv_nsec);
     printf("%f\n", sec / SAMPLE);
   }
+  return a;
 }
 
-void inline add_multiple(size_t n, float a, float b, float c, float d)
+float inline add_multiple(size_t n, float a, float b, float c, float d)
 {
   printf("#add_multiple (ns)\n");
   struct timespec before, after;
@@ -98,6 +99,7 @@ void inline add_multiple(size_t n, float a, float b, float c, float d)
     long long sec = (after.tv_sec - before.tv_sec) * 1000000000 + (after.tv_nsec - before.tv_nsec);
     printf("%f\n", sec / SAMPLE);
   }
+  return a - b + c - d;
 }
 
 int main(int argc, char **argv)
@@ -108,12 +110,16 @@ int main(int argc, char **argv)
   float c = atof(argv[3]);
   float d = atof(argv[4]);
   float array[ARRARY_SIZE];
+  float tmp = 0;
   for (size_t i = 0; i < ARRARY_SIZE; i++)
   {
     array[i] = 2;
   }
 
-  add_multiple(N_EXP, a, b, c, d);
-  add_single(N_EXP, a);
+  tmp = add_multiple(N_EXP, a, b, c, d);
+  printf("Bypass O3 optimization: %f\n", tmp);
+  tmp = add_single(N_EXP, a);
+  printf("Bypass O3 optimization: %f\n", tmp);
   atomic_add(N_EXP, a);
+  printf("Bypass O3 optimization: %f\n", tmp);
 }
