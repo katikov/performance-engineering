@@ -71,7 +71,7 @@ void inline add_single(size_t n, float a)
     timespec_get(&before, TIME_UTC);
     for (size_t j = 0; j < SAMPLE; j++)
     {
-      a = a + a;
+      a += a*a;
     }
     timespec_get(&after, TIME_UTC);
     long long sec = (after.tv_sec - before.tv_sec) * 1000000000 + (after.tv_nsec - before.tv_nsec);
@@ -89,10 +89,10 @@ void inline add_multiple(size_t n, float a, float b, float c, float d)
     timespec_get(&before, TIME_UTC);
     for (size_t j = 0; j < SAMPLE; j++)
     {
-      a = a + a;
-      b = b + b;
-      c = c + c;
-      d = d + d;
+      a += a * a;
+      b += b * b;
+      c += c * c;
+      d += d * d;
     }
     timespec_get(&after, TIME_UTC);
     long long sec = (after.tv_sec - before.tv_sec) * 1000000000 + (after.tv_nsec - before.tv_nsec);
