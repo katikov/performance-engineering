@@ -22,12 +22,18 @@ void cmp(double* A, double* B, int length){
    printf("results OK!\n");
 }
 
-void generate_mat(int m, int n, int p, float *A, float *B) {
-  int i;
-
-  for (i=0; i<(m*n); i++) A[i] = 1; //i/10; 
-  for (i=0; i<(n*p); i++) B[i] = 1; //i/5;
-
+int* generate_mat(int n, int m) {
+   srand(42); // fixed seed
+   int size = m*n;
+   int* img = (int*)malloc(size*sizeof(int));
+   if(img==NULL){
+      printf("Out of memory! \n");
+      exit(-1);
+    }
+   for(int i=0;i<size;i++){
+      img[i] = rand()%256;
+   }
+   return img;
 }
 
 
@@ -45,7 +51,8 @@ int main (int argc, char** argv) {
       if(argc >= 2){
          image = readImage(argv[1], &n, &m);
       }else{
-         // TODO: generate image
+         n = DEFAULT_N; m = DEFAULT_M;
+         image = generate_mat(n, m);
       }
       if(argc==3){
          int _m, _n;
@@ -56,6 +63,7 @@ int main (int argc, char** argv) {
          }
       }
    }
+
    Complex* dft_image = (Complex *)malloc(m*n*sizeof(Complex));
    if(dft_image == NULL){
       printf("Out of memory! \n");
@@ -65,9 +73,10 @@ int main (int argc, char** argv) {
    fft2_basic(image, dft_image, n, m);
 
    gettimeofday(&after, NULL);
-
-   cmp((double*)dft_image, GT, n*m*2);
-
+   if(argc == 3){
+      cmp((double*)dft_image, GT, n*m*2);
+      free(GT);
+   }
 
    printf("Total exec  time: %.6f seconds \n", ((after.tv_sec + (after.tv_usec / 1000000.0)) -
                (before.tv_sec + (before.tv_usec / 1000000.0)))/REP);

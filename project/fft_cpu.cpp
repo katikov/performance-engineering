@@ -119,5 +119,40 @@ void fft2_basic(int* image, Complex* dft_image, int n, int m){
         }
     }
 
+}
+
+
+void fft2_cpu(int* image, Complex* dft_image, int n, int m){
+    Complex wm = wx(m), wn = wx(n);
+    Complex wm_pows[m];
+    Complex wn_pows[n];
+    wm_pows[0] = wn_pows[0] = Complex{1,0};
+    for(int i=1;i<m;i++) wm_pows[i] = wm_pows[i-1]*wm;
+    for(int i=1;i<n;i++) wn_pows[i] = wn_pows[i-1]*wn;
+
+    for(int i=0;i<n;i++){
+        int* image_line = image + i*m;
+        Complex* dft_line = dft_image + i*m;
+        for(int j=0;j<m;j++){
+            Complex res{0,0};
+            for(int k=0;k<m;k++){
+                res = res + wm_pows[j*k%m]*image_line[k];
+            }
+            dft_line[j] = res;
+        }
+        
+    }
+    Complex col[n];
+    for(int j=0;j<m;j++){
+        Complex* dft_col = dft_image + j;
+        for(int i=0;i<n;i++) col[i] = dft_col[i*m];
+        for(int i=0;i<n;i++){
+            Complex res{0,0};
+            for(int k=0;k<n;k++){
+                res = res + wn_pows[i*k%n]*col[k];
+            }
+            dft_col[i*m] = res;
+        }
+    }
 
 }
