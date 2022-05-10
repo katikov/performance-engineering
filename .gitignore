@@ -1,3 +1,7 @@
-Assignment1/*.o
+*.o
 Assignment1/matmul
 Assignment1/transpose
+Assignment2/histo_atomic/histo_atomic
+Assignment2/histo_avoiding_mutual_ex/histo_avoiding_mutual_ex
+project/*.txt
+project/fft
