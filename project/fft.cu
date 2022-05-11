@@ -171,10 +171,10 @@ void inline fft2_cuda_basic(int* image, Complex* dft_image, int* image_device, C
 
    assert(getradix(n, radix)==1);
    cudaMemcpy(radix_device, radix, 3*sizeof(int), cudaMemcpyHostToDevice);
-   cuda_fft_init<<<(m+4-1)/4 ,dim3(4,8)>>>(n, radix_device, ex_bit_reversal, wm_pows);
+   cuda_fft_init<<<numBlocksRow ,numThreads>>>(n, radix_device, ex_bit_reversal, wm_pows);
    // cudaMemcpy(dft_image, wm_pows, m*n*sizeof(Complex), cudaMemcpyDeviceToHost);
    // for(int i=0;i<n;i++)printf("%lf+%lf ", dft_image[i].real, dft_image[i].imag); printf("\n");
-   fft_cuda_basic_kernel_col<<<numBlocksCol, numThreads>>>(col_temp, dft_device, ex_bit_reversal, radix_device, wm_pows, n, m);
+   fft_cuda_basic_kernel_col<<<(m+4-1)/4, dim3(4,8)>>>(col_temp, dft_device, ex_bit_reversal, radix_device, wm_pows, n, m);
 
 
    cudaDeviceSynchronize();
