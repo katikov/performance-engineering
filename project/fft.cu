@@ -65,14 +65,19 @@ int main (int argc, char** argv) {
    }
 
    Complex* dft_image = (Complex *)malloc(m*n*sizeof(Complex));
+   Complex* dft_image2 = (Complex *)malloc(m*n*sizeof(Complex));
    if(dft_image == NULL){
       printf("Out of memory! \n");
       exit(-1);
    }
    gettimeofday(&before, NULL); 
-   fft2_basic(image, dft_image, n, m);
+   //fft2_basic(image, dft_image2, n, m);
+
+   fft2_cpu(image, dft_image, n, m);
 
    gettimeofday(&after, NULL);
+
+   //cmp((double*)dft_image, (double*)dft_image2, n*m*2);
    if(argc == 3){
       cmp((double*)dft_image, GT, n*m*2);
       free(GT);
