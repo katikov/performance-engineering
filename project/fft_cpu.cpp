@@ -218,4 +218,5 @@ void fft2_cpu(int* image, Complex* dft_image, int n, int m){
             dft_col[i*m] = col[i];
         }
     }
+    
 }
