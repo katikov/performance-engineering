@@ -192,7 +192,43 @@ void inline fft2_cuda_basic(int* image, Complex* dft_image, int* image_device, C
    //for(int i=0;i<n;i++)printf("%lf+%lfj ", dft_image[i].real, dft_image[i].imag); printf("\n");
 }
 
-int main (int argc, char** argv) {
+void main()
+    int x, y, count;
+
+    // Open an input pipe from ffmpeg and an output pipe to a second instance of ffmpeg
+    FILE* pipein = popen("ffmpeg -i clouds.mp4 -f image2pipe -pix_fmt rgb24 -vcodec rawvideo -", "rb");
+    FILE* pipeout = popen("ffmpeg -y -f rawvideo -vcodec rawvideo -pix_fmt rgb24 -s 1920x1080 -r 24 -i - -f mp4 -q:v 5 -an -vcodec mpeg4 output.mp4", "wb");
+
+    // Process video frames
+    while (1)
+    {
+        // Read a frame from the input pipe into the buffer
+        count = fread(frame, 1, H * W * 3, pipein);
+
+        // If we didn't get a frame of video, we're probably at the end
+        if (count != H * W * 3) break;
+
+        // Process this frame
+        for (y = 0; y < H; ++y) for (x = 0; x < W; ++x)
+        {
+            // Invert each colour component in every pixel
+            frame[y][x][0] = 255 - frame[y][x][0]; // red
+            frame[y][x][1] = 255 - frame[y][x][1]; // green
+            frame[y][x][2] = 255 - frame[y][x][2]; // blue
+        }
+
+        //Write this frame to the output pipe
+        fwrite(frame, 1, H * W * 3, pipeout);
+    }
+
+    // Flush and close input and output pipes
+    fflush(pipein);
+    pclose(pipein);
+    fflush(pipeout);
+    pclose(pipeout);
+}
+
+int main2 (int argc, char** argv) {
    struct timeval before, after;
    int m, n;
    int* image = NULL;
