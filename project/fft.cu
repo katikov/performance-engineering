@@ -192,7 +192,7 @@ void inline fft2_cuda_basic(int* image, Complex* dft_image, int* image_device, C
    //for(int i=0;i<n;i++)printf("%lf+%lfj ", dft_image[i].real, dft_image[i].imag); printf("\n");
 }
 
-void main()
+int main()
     int x, y, count;
 
     // Open an input pipe from ffmpeg and an output pipe to a second instance of ffmpeg
@@ -226,6 +226,7 @@ void main()
     pclose(pipein);
     fflush(pipeout);
     pclose(pipeout);
+    return 0;
 }
 
 int main2 (int argc, char** argv) {
