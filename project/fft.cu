@@ -192,7 +192,14 @@ void inline fft2_cuda_basic(int* image, Complex* dft_image, int* image_device, C
    //for(int i=0;i<n;i++)printf("%lf+%lfj ", dft_image[i].real, dft_image[i].imag); printf("\n");
 }
 
+// Video resolution
+
+
+// Allocate a buffer to store one frame
 int main(){
+    int W = 1920;
+    int H = 1080;
+    unsigned char frame[H][W][3] = { 0 };
     int x, y, count;
 
     // Open an input pipe from ffmpeg and an output pipe to a second instance of ffmpeg
