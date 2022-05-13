@@ -201,7 +201,6 @@ unsigned char frame[H][W][3] = { 0 };
 
 int main(){
     int x, y, count;
-
     // Open an input pipe from ffmpeg and an output pipe to a second instance of ffmpeg
     FILE* pipein = popen("ffmpeg -i clouds.mp4 -f image2pipe -pix_fmt rgb24 -vcodec rawvideo - 2> /dev/null", "r");
     FILE* pipeout = popen("ffmpeg -y -f rawvideo -vcodec rawvideo -pix_fmt rgb24 -s 1920x1080 -r 24 -i - -f mp4 -q:v 5 -an -vcodec mpeg4 output.mp4", "w");
