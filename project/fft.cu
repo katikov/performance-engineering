@@ -3,6 +3,8 @@
 #include <sys/time.h>
 #include <math.h>
 #include <assert.h>
+#include <cuda_runtime.h>
+#include <cufft.h>
 #include "fft_cpu.h"
 
 
@@ -59,21 +61,28 @@ __global__ void cuda_fft_init(int n, int* radix, int* ex_bit_reversal, Complex* 
    }
 }
 
-inline __device__ Complex operator *(const Complex a, const Complex b){
+__forceinline__ __device__ Complex operator *(const Complex a, const Complex b){
     return Complex{a.real*b.real-a.imag*b.imag, a.real*b.imag+a.imag*b.real};
 } 
 
-inline __device__ Complex operator *(const Complex a, double b){
+__forceinline__ __device__ Complex operator *(const Complex a, double b){
     return Complex{a.real*b, a.imag*b};
 } 
 
-inline __device__ Complex operator +(const Complex a, const Complex b){
+__forceinline__ __device__ Complex operator +(const Complex a, const Complex b){
     return Complex{a.real + b.real, a.imag + b.imag};
 } 
 
-inline __device__ Complex operator -(const Complex a, const Complex b){
+__forceinline__ __device__ Complex operator -(const Complex a, const Complex b){
     return Complex{a.real - b.real, a.imag - b.imag};
+}
+
+
+__forceinline__ __device__ Complex wm(int k, int m){
+   //k%=m;
+   return Complex{cos(2*k*pi/m), -sin(2*k*pi/m)};
 } 
+
 
 __global__ void fft_cuda_basic_kernel(int* image, Complex* dft_image, int* ex_bit_reversal, 
              int* radix, Complex* wm_pows, int n, int m)
@@ -137,8 +146,8 @@ __global__ void fft_cuda_basic_kernel_col(Complex* col_temp, Complex* dft_image,
                      }
                      for(int v=0; v<p; v++) col[i+j+v*len] = temp2[v];
                   }
-                  __syncthreads();
             }
+            __syncthreads();
             len *= p;
          }
       }
@@ -192,6 +201,205 @@ void inline fft2_cuda_basic(int* image, Complex* dft_image, int* image_device, C
    //for(int i=0;i<n;i++)printf("%lf+%lfj ", dft_image[i].real, dft_image[i].imag); printf("\n");
 }
 
+
+
+__global__ void fft_cuda_kernel_swap(Complex* dft_image, 
+             int* radix, Complex* wm_pows, int n, int m)
+{
+   unsigned int r = blockIdx.x;
+   unsigned int threads = blockDim.x;
+   unsigned int tid = threadIdx.x;
+
+   // 
+   // 
+   // 
+   // fft1_kernel(col, wm_pows, radix, n, tid, threads);
+   // for(int i=tid;i<n;i+=threads){
+   //    dft_col[i*m] = col[i];
+   // }
+
+   extern __shared__ Complex dft_shm[];
+   Complex* dft_col = dft_image + r;
+   Complex* dft_line = dft_shm, *dft_newline = dft_shm+n;
+   for(int i=tid;i<n;i+=threads) dft_shm[i] = dft_col[i*m];
+   
+   int len=1;
+   Complex temp[5], temp2[5];
+   __syncthreads();
+   for(int t=2;t>=0;t--){
+      int cnt = radix[t];
+      int p = _prime[t];
+      while(cnt--){
+         int inner_step = n/p/len;
+         int outer_step = n/len;
+         for(int i=tid; i<inner_step; i+=threads){
+            for(int j=0;j<len;j++){
+                  for(int v=0; v<p; v++) temp[v] = dft_line[i+j*outer_step+v*inner_step] * wm_pows[n*v*j/(len*p)];
+                  for(int v=0; v<p; v++){
+                     temp2[v] = temp[0];
+                     for(int w=1;w<p;w++) temp2[v] = temp2[v] + wm_pows[(w*v*n/p)%n] * temp[w];
+                  }
+                  for(int v=0; v<p; v++) dft_newline[i+(j+v*len)*inner_step] = temp2[v];
+               }
+         }
+         Complex* templine = dft_line; dft_line = dft_newline; dft_newline = templine;
+         len *= p;
+         __syncthreads();
+      }
+   }
+   //for(int j=tid;j<m;j+=threads) dft_res[j] = dft_line[j];
+   for(int i=tid;i<n;i+=threads) dft_col[i*m] = dft_line[i];
+
+}
+
+
+__device__ __forceinline__ void fft1_kernel(Complex *dft_line, Complex* wm_pows, int* radix, int m, int tid, int threads){
+   int len=1;
+   Complex temp[5], temp2[5];
+   for(int t=2;t>=0;t--){
+      int cnt = radix[t];
+      int p = _prime[t];
+      while(cnt--){
+         if(len >= threads)
+            for(int i=0;i<m;i+=len*p){
+               for(int j=tid;j<len;j+=threads){
+                  for(int v=0; v<p; v++) temp[v] = dft_line[i+j+v*len] * wm_pows[m*v*j/(len*p)];
+                  for(int v=0; v<p; v++){
+                     temp2[v] = temp[0];
+                     for(int w=1;w<p;w++) temp2[v] = temp2[v] + wm_pows[(w*v*m/p)%m] * temp[w];
+                  }
+                  for(int v=0; v<p; v++) dft_line[i+j+v*len] = temp2[v];
+               }
+            }
+         else
+            for(int i=len*p*tid;i<m;i+=len*p*threads){
+                  for(int j=0;j<len;j++){
+                     for(int v=0; v<p; v++) temp[v] = dft_line[i+j+v*len] * wm_pows[m*v*j/(len*p)];
+                     for(int v=0; v<p; v++){
+                        temp2[v] = temp[0];
+                        for(int w=1;w<p;w++) temp2[v] = temp2[v] + wm_pows[(w*v*m/p)%m] * temp[w];
+                     }
+                     for(int v=0; v<p; v++) dft_line[i+j+v*len] = temp2[v];
+                  }
+            }
+         len *= p;
+         __syncthreads();
+      }
+   }
+} 
+
+__global__ void fft_cuda_kernel(int* image, Complex* dft_image, int* ex_bit_reversal, 
+             int* radix, Complex* wm_pows, int n, int m)
+{
+   unsigned int r = blockIdx.x;
+   unsigned int threads = blockDim.x;
+   unsigned int tid = threadIdx.x;
+
+
+   extern __shared__ Complex dft_line[];
+   Complex* dft_res = dft_image + r * m;
+   int* image_line = image + r*m;
+   for(int j=tid;j<m;j+=threads) dft_line[j] = Complex{(double)image_line[ex_bit_reversal[j]], 0};
+   __syncthreads();
+   fft1_kernel(dft_line, wm_pows, radix, m, tid, threads);
+   for(int j=tid;j<m;j+=threads) dft_res[j] = dft_line[j];
+   
+}
+
+
+__global__ void fft_cuda_kernel_col(Complex* dft_image, int* ex_bit_reversal, 
+             int* radix, Complex* wm_pows, int n, int m)
+{
+   unsigned int r = blockIdx.x;
+   unsigned int threads = blockDim.x;
+   unsigned int tid = threadIdx.x;
+
+   extern __shared__ Complex col[];
+   Complex* dft_col = dft_image + r;
+   for(int i=tid;i<n;i+=threads) col[i] = dft_col[ex_bit_reversal[i]*m];
+   __syncthreads();
+   fft1_kernel(col, wm_pows, radix, n, tid, threads);
+   for(int i=tid;i<n;i+=threads){
+      dft_col[i*m] = col[i];
+   }
+}
+
+
+void inline fft2_cuda(int* image, Complex* dft_image, int* image_device, Complex* dft_device, int n, int m) {
+   int numThreads = 32;
+   int numBlocksRow = (n+numThreads-1)/numThreads;
+   int numBlocksCol = (m+numThreads-1)/numThreads;
+   struct timeval before, after;
+
+   //for(int i=0;i<m;i++)printf("%d ", image[i]); printf("\n");
+   // cudaMemset(C_device, 0, m*p*sizeof(float));
+   //gettimeofday(&before, NULL);
+   cudaMemcpy(image_device, image, m*n*sizeof(int), cudaMemcpyHostToDevice);
+   //gettimeofday(&after, NULL);
+   int* radix_device; cudaMalloc((void **)&radix_device, 3*sizeof(int));
+   int* ex_bit_reversal; cudaMalloc((void **)&ex_bit_reversal, max(m,n)*sizeof(int));
+   Complex* wm_pows; cudaMalloc((void **)&wm_pows, max(m,n)*sizeof(Complex));
+   //Complex* col_temp; cudaMalloc((void **)&col_temp, m*n*sizeof(Complex));
+   
+   gettimeofday(&before, NULL);
+   int radix[3];
+   assert(getradix(m, radix)==1);
+   cudaMemcpy(radix_device, radix, 3*sizeof(int), cudaMemcpyHostToDevice);
+   cuda_fft_init<<<numBlocksCol ,numThreads>>>(m, radix_device, ex_bit_reversal, wm_pows);
+   //fft_cuda_basic_kernel<<<(n+4-1)/4, dim3(4,8)>>>(image_device, dft_device, ex_bit_reversal, radix_device, wm_pows, n, m);
+   fft_cuda_kernel<<<n, 64, m*sizeof(Complex)>>>(image_device, dft_device, ex_bit_reversal, radix_device, wm_pows, n, m);
+
+   assert(getradix(n, radix)==1);
+   cudaMemcpy(radix_device, radix, 3*sizeof(int), cudaMemcpyHostToDevice);
+   cuda_fft_init<<<numBlocksRow ,numThreads>>>(n, radix_device, ex_bit_reversal, wm_pows);
+   
+   //cudaMemcpy(dft_image, dft_device, m*n*sizeof(Complex), cudaMemcpyDeviceToHost);
+   //for(int i=0;i<m;i++)printf("%lf+%lf ", dft_image[i].real, dft_image[i].imag); printf("\n");
+   //fft_cuda_basic_kernel_col<<<(m+4-1)/4, dim3(4,8)>>>(col_temp, dft_device, ex_bit_reversal, radix_device, wm_pows, n, m);
+   fft_cuda_kernel_col<<<m, 64, n*sizeof(Complex)>>>(dft_device, ex_bit_reversal, radix_device, wm_pows, n, m);
+   //fft_cuda_kernel_swap<<<m, 64, n*sizeof(Complex)*2>>>(dft_device, radix_device, wm_pows, n, m);
+
+   cudaDeviceSynchronize();
+   gettimeofday(&after, NULL);
+   computation_time += (after.tv_sec + (after.tv_usec / 1000000.0)) -
+                      (before.tv_sec + (before.tv_usec / 1000000.0));
+
+// printf("Computation time: %10.2f seconds \n", ));
+   cudaMemcpy(dft_image, dft_device, m*n*sizeof(Complex), cudaMemcpyDeviceToHost);
+   cudaFree(radix_device);
+   cudaFree(ex_bit_reversal);
+   cudaFree(wm_pows);
+   //cudaFree(col_temp);
+
+   //for(int i=0;i<n;i++)printf("%lf+%lfj ", dft_image[i].real, dft_image[i].imag); printf("\n");
+}
+
+
+// // void fft2_cufft(int* image, Complex* dft_image, int* image_device, cufftHandle *plan, int n, int m) {
+// void fft2_cufft(cufftDoubleComplex* idata, cufftDoubleComplex* odata, cufftDoubleComplex* CompData, cufftHandle *plan, Complex* dft_image, int n, int m) {
+   
+//    // cufftDoubleComplex *idata, *odata;
+//    // cudaMalloc((void**)&idata, sizeof(cufftDoubleComplex)*m*n);
+//    // cudaMalloc((void**)&odata, sizeof(cufftDoubleComplex)*m*n);
+//    // //cudaMalloc((void**)&tdata, sizeof(cufftDoubleComplex)*m*n);
+
+//    // cufftDoubleComplex *CompData = (cufftDoubleComplex*) malloc(m*n*sizeof(cufftDoubleComplex));
+//    // for(int i=0; i<m*n; i++){
+//    //    CompData[i].x = image[i]; CompData[i].y=0;
+//    // }
+//    // cudaMemcpy(idata, CompData, m*n * sizeof(cufftDoubleComplex), cudaMemcpyHostToDevice);
+   
+//    //cufftExecZ2Z(*plan, idata, odata, CUFFT_FORWARD);
+//    //cufftExecZ2Z(plan, idata, tdata, CUFFT_FORWARD);
+   
+
+//    cudaMemcpy(dft_image, odata, m*n*sizeof(cufftDoubleComplex), cudaMemcpyDeviceToHost);
+//    //for(int i=0;i<m*n;i++) dft_image[i] = Complex{CompData[i].x, CompData[i].y};
+   
+   
+// }
+
+
 int main (int argc, char** argv) {
    struct timeval before, after;
    int m, n;
@@ -207,7 +415,7 @@ int main (int argc, char** argv) {
          image = readImage(argv[1], &n, &m);
       }else{
          n = DEFAULT_N; m = DEFAULT_M;
-         //n = 6; m = 10;
+         // n = 1; m = 120;
          image = generate_mat(n, m);
       }
       if(argc==3){
@@ -231,16 +439,38 @@ int main (int argc, char** argv) {
    cudaMalloc((void **)&dft_device, m*n*sizeof(Complex));
    cudaMalloc((void **)&image_device, m*n*sizeof(int));
 
+
+//    cufftHandle plan;
+//    cufftPlan2d(&plan, n, m, CUFFT_Z2Z);
+
+//    cufftDoubleComplex *idata, *odata;
+//    cudaMalloc((void**)&idata, sizeof(cufftDoubleComplex)*m*n);
+//    cudaMalloc((void**)&odata, sizeof(cufftDoubleComplex)*m*n);
+//    cufftDoubleComplex *CompData = (cufftDoubleComplex*) malloc(m*n*sizeof(cufftDoubleComplex));
+//    for(int i=0; i<m*n; i++){
+//       CompData[i].x = image[i]; CompData[i].y=0;
+//    }
+// cudaMemcpy(idata, CompData, m*n * sizeof(cufftDoubleComplex), cudaMemcpyHostToDevice);
    gettimeofday(&before, NULL); 
    //fft2_basic(image, dft_image2, n, m);
-   for(int i=0;i<REP; i++)
-      fft2_cuda_basic(image, dft_image2, image_device, dft_device, n, m);
-   gettimeofday(&after, NULL);
 
+   // for(int i=0;i<REP; i++)
+   //    fft2_cufft(idata, odata, CompData, &plan,dft_image2, n, m);
+   for(int i=0;i<REP; i++)
+      fft2_cuda(image, dft_image2, image_device, dft_device, n, m);
+   
+   //fft2_cpu(image, dft_image2, n, m);
+   gettimeofday(&after, NULL);
+//    cufftDestroy(plan);
+// cudaFree(idata);
+//    cudaFree(odata);
+//    free(CompData);
 
    fft2_cpu(image, dft_image, n, m);
+
    //printf("GT:\n");
-   //for(int i=0;i<n;i++)printf("%lf+%lfj ", dft_image[i].real, dft_image[i].imag); printf("\n");
+   //for(int i=0;i<m;i++)printf("%lf+%lfj ", dft_image[i].real, dft_image[i].imag); printf("\n");
+
    cmp((double*)dft_image, (double*)dft_image2, n*m*2);
    if(argc == 3){
       cmp((double*)dft_image, GT, n*m*2);

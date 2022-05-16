@@ -1,7 +1,7 @@
 # See LICENSE.txt for license details.
 NVCC = nvcc
 CXX_FLAGS += -std=c++11 -O3 -Wall -ftree-vectorize 
-CU_FLAGS += -O3 -g --ptxas-options=-v
+CU_FLAGS += -O3 -g --ptxas-options=-v -lcuda -lcufft
 PAR_FLAG = -fopenmp
 #GENERATE = -D GENERATE
 GENERATE = 
