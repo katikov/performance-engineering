@@ -8,7 +8,7 @@
 #include "fft_cpu.h"
 
 
-#define REP 10
+#define REP 100
 
 
 double computation_time = 0;
@@ -237,13 +237,20 @@ __device__ __forceinline__ void fft1_kernel(Complex *dft_line, Complex* wm_pows,
    }
 } 
 
-__constant__ Complex w3_1 = Complex{-0.5,-0.8660254037844386}, w3_2 = Complex{-0.5,0.8660254037844386};
-__constant__ Complex w5_1 = Complex{0.30901699437494745, -0.9510565162951535},
-                  w5_2 = Complex{-0.8090169943749473, -0.5877852522924732},
-                  w5_3 = Complex{-0.8090169943749475, 0.587785252292473},
-                  w5_4 = Complex{0.30901699437494723, 0.9510565162951536};
+// __constant__ Complex w3_1 = Complex{-0.5,-0.8660254037844386}, w3_2 = Complex{-0.5,0.8660254037844386};
+// __constant__ Complex w5_1 = Complex{0.30901699437494745, -0.9510565162951535},
+//                   w5_2 = Complex{-0.8090169943749473, -0.5877852522924732},
+//                   w5_3 = Complex{-0.8090169943749475, 0.587785252292473},
+//                   w5_4 = Complex{0.30901699437494723, 0.9510565162951536};
 
 __device__ __forceinline__ void fft1_kernel_unroll(Complex *dft_line, Complex* wm_pows, int* radix, int m, int tid, int threads){
+   const Complex w3_1 = Complex{-0.5,-0.8660254037844386}, w3_2 = Complex{-0.5,0.8660254037844386};
+   const Complex w5_1 = Complex{0.30901699437494745, -0.9510565162951535},
+                     w5_2 = Complex{-0.8090169943749473, -0.5877852522924732},
+                     w5_3 = Complex{-0.8090169943749475, 0.587785252292473},
+                     w5_4 = Complex{0.30901699437494723, 0.9510565162951536};
+   
+      
    int len=1;
    Complex temp[5];
    int cnt = radix[2];
@@ -253,10 +260,10 @@ __device__ __forceinline__ void fft1_kernel_unroll(Complex *dft_line, Complex* w
          for(int i=0;i<m;i+=len*p){
             for(int j=tid;j<len;j+=threads){
                temp[0] = dft_line[i+j];
-               temp[1] = dft_line[i+j+1*len] * wm_pows[m*j/(len*p)];
-               temp[2] = dft_line[i+j+2*len] * wm_pows[m*j/(len*p)*2];
-               temp[3] = dft_line[i+j+3*len] * wm_pows[m*j/(len*p)*3];
-               temp[4] = dft_line[i+j+4*len] * wm_pows[m*j/(len*p)*4];
+               temp[1] = dft_line[i+j+1*len] * wm_pows[m/(len*p)*j];
+               temp[2] = dft_line[i+j+2*len] * wm_pows[m/(len*p)*j*2];
+               temp[3] = dft_line[i+j+3*len] * wm_pows[m/(len*p)*j*3];
+               temp[4] = dft_line[i+j+4*len] * wm_pows[m/(len*p)*j*4];
 
                dft_line[i+j] = temp[0] + temp[1] + temp[2] + temp[3] + temp[4];
                dft_line[i+j+len] = temp[0] + temp[1]*w5_1 + temp[2]*w5_2 + temp[3]*w5_3 + temp[4]*w5_4;
@@ -269,10 +276,10 @@ __device__ __forceinline__ void fft1_kernel_unroll(Complex *dft_line, Complex* w
          for(int i=len*p*tid;i<m;i+=len*p*threads){
             for(int j=0;j<len;j++){
                temp[0] = dft_line[i+j];
-               temp[1] = dft_line[i+j+1*len] * wm_pows[m*j/(len*p)];
-               temp[2] = dft_line[i+j+2*len] * wm_pows[m*j/(len*p)*2];
-               temp[3] = dft_line[i+j+3*len] * wm_pows[m*j/(len*p)*3];
-               temp[4] = dft_line[i+j+4*len] * wm_pows[m*j/(len*p)*4];
+               temp[1] = dft_line[i+j+1*len] * wm_pows[m/(len*p)*j];
+               temp[2] = dft_line[i+j+2*len] * wm_pows[m/(len*p)*j*2];
+               temp[3] = dft_line[i+j+3*len] * wm_pows[m/(len*p)*j*3];
+               temp[4] = dft_line[i+j+4*len] * wm_pows[m/(len*p)*j*4];
 
                dft_line[i+j] = temp[0] + temp[1] + temp[2] + temp[3] + temp[4];
                dft_line[i+j+len] = temp[0] + temp[1]*w5_1 + temp[2]*w5_2 + temp[3]*w5_3 + temp[4]*w5_4;
@@ -292,8 +299,8 @@ __device__ __forceinline__ void fft1_kernel_unroll(Complex *dft_line, Complex* w
          for(int i=0;i<m;i+=len*p){
             for(int j=tid;j<len;j+=threads){
                temp[0] = dft_line[i+j];
-               temp[1] = dft_line[i+j+len] * wm_pows[m*j/(len*p)];
-               temp[2] = dft_line[i+j+2*len] * wm_pows[m*j/(len*p)*2];
+               temp[1] = dft_line[i+j+len] * wm_pows[m/(len*p)*j];
+               temp[2] = dft_line[i+j+2*len] * wm_pows[m/(len*p)*j*2];
                dft_line[i+j] = temp[0] + temp[1] + temp[2];
                dft_line[i+j+len] = temp[0] + temp[1]*w3_1 + temp[2]*w3_2;
                dft_line[i+j+2*len] = temp[0] + temp[1]*w3_2 + temp[2]*w3_1;
@@ -303,8 +310,8 @@ __device__ __forceinline__ void fft1_kernel_unroll(Complex *dft_line, Complex* w
          for(int i=len*p*tid;i<m;i+=len*p*threads){
             for(int j=0;j<len;j++){
                temp[0] = dft_line[i+j];
-               temp[1] = dft_line[i+j+len] * wm_pows[m*j/(len*p)];
-               temp[2] = dft_line[i+j+2*len] * wm_pows[m*j/(len*p)*2];
+               temp[1] = dft_line[i+j+len] * wm_pows[m/(len*p)*j];
+               temp[2] = dft_line[i+j+2*len] * wm_pows[m/(len*p)*j*2];
                dft_line[i+j] = temp[0] + temp[1] + temp[2];
                dft_line[i+j+len] = temp[0] + temp[1]*w3_1 + temp[2]*w3_2;
                dft_line[i+j+2*len] = temp[0] + temp[1]*w3_2 + temp[2]*w3_1;
@@ -323,7 +330,7 @@ __device__ __forceinline__ void fft1_kernel_unroll(Complex *dft_line, Complex* w
          for(int i=0;i<m;i+=len*p){
             for(int j=tid;j<len;j+=threads){
                temp[0] = dft_line[i+j];
-               temp[1] = dft_line[i+j+len] * wm_pows[m*j/(len*p)];
+               temp[1] = dft_line[i+j+len] * wm_pows[m/(len*p)*j];
                dft_line[i+j] = temp[0] + temp[1];
                dft_line[i+j+len] = temp[0] - temp[1];
             }
@@ -332,7 +339,7 @@ __device__ __forceinline__ void fft1_kernel_unroll(Complex *dft_line, Complex* w
          for(int i=len*p*tid;i<m;i+=len*p*threads){
             for(int j=0;j<len;j++){
                temp[0] = dft_line[i+j];
-               temp[1] = dft_line[i+j+len] * wm_pows[m*j/(len*p)];
+               temp[1] = dft_line[i+j+len] * wm_pows[m/(len*p)*j];
                dft_line[i+j] = temp[0] + temp[1];
                dft_line[i+j+len] = temp[0] - temp[1];
             }
@@ -480,6 +487,7 @@ __global__ void fft_cuda_kernel_col_unroll(Complex* dft_image, int* ex_bit_rever
    unsigned int tid = threadIdx.x;
 
    extern __shared__ Complex col[];
+
    Complex* dft_col = dft_image + r;
    for(int i=tid;i<n;i+=threads) col[i] = dft_col[ex_bit_reversal[i]*m];
    __syncthreads();
@@ -523,11 +531,14 @@ void inline fft2_cuda_unroll(int* image, Complex* dft_image, int* image_device, 
    cudaFree(radix_device);cudaFree(ex_bit_reversal);cudaFree(wm_pows);
 
 }
+/*******************************************************************************************************/
+
+
 
 constexpr int DEFAULT_M = 1920;
 constexpr int DEFAULT_N = 1080;
-
 /*
+
 __constant__ int _radix_m[3] = {7,1,1}; // 1920
 __constant__ int _radix_n[3] = {3,3,1}; // 1080
 __constant__ int _ex_bit_reversal_n[DEFAULT_N];
@@ -585,7 +596,7 @@ __global__ void fft_cuda_kernel_constant(int* image, Complex* dft_image)
    for(int j=tid;j<m;j+=threads) dft_line[j] = Complex{(double)image_line[_ex_bit_reversal_m[j]], 0};
    //for(int j=tid;j<m;j+=threads) dft_line[j] = _wm_pows[j];
    __syncthreads();
-   fft1_kernel(dft_line, _wm_pows, _radix_m, m, tid, threads);
+   fft1_kernel_unroll(dft_line, _wm_pows, _radix_m, m, tid, threads);
    for(int j=tid;j<m;j+=threads) dft_res[j] = dft_line[j];
    
 }
@@ -601,7 +612,7 @@ __global__ void fft_cuda_kernel_col_constant(Complex* dft_image)
    Complex* dft_col = dft_image + r;
    for(int i=tid;i<n;i+=threads) col[i] = dft_col[_ex_bit_reversal_n[i]*m];
    __syncthreads();
-   fft1_kernel(col, _wn_pows, _radix_n, n, tid, threads);
+   fft1_kernel_unroll(col, _wn_pows, _radix_n, n, tid, threads);
    for(int i=tid;i<n;i+=threads){
       dft_col[i*m] = col[i];
    }
@@ -634,7 +645,91 @@ void  fft2_cuda_constant(int* image, Complex* dft_image, int* image_device, Comp
    cudaMemcpy(dft_image, dft_device, m*n*sizeof(Complex), cudaMemcpyDeviceToHost);
 
 }
+
 */
+
+void inline fft2_cuda_stream(int* image, Complex* dft_image, int* image_device, Complex* dft_device, int n, int m) {
+   struct timeval before, after;
+   //fft_cuda_constant_init();
+
+   const int nstreams = 2;
+   cudaStream_t streams[nstreams];
+   int* image_device_stream[nstreams];
+   Complex* dft_image_stream[nstreams];
+   Complex* dft_image_device_stream[nstreams];
+   for(int i=0;i<nstreams;i++) {
+      cudaStreamCreate(&streams[i]);
+      cudaMalloc((void **)&dft_image_device_stream[i], m*n*sizeof(Complex));
+      cudaMalloc((void **)&image_device_stream[i], m*n*sizeof(int));
+      dft_image_stream[i] = (Complex *)malloc(m*n*sizeof(Complex));
+   }
+
+   int numThreads = 32;
+   int numBlocksRow = (n+numThreads-1)/numThreads;
+   int numBlocksCol = (m+numThreads-1)/numThreads;
+   
+   //gettimeofday(&after, NULL);
+   int* radix_device_m; cudaMalloc((void **)&radix_device_m, 3*sizeof(int));
+   int* ex_bit_reversal_m; cudaMalloc((void **)&ex_bit_reversal_m, m*sizeof(int));
+   Complex* wm_pows; cudaMalloc((void **)&wm_pows, m*sizeof(Complex));
+   int* radix_device_n; cudaMalloc((void **)&radix_device_n, 3*sizeof(int));
+   int* ex_bit_reversal_n; cudaMalloc((void **)&ex_bit_reversal_n, n*sizeof(int));
+   Complex* wn_pows; cudaMalloc((void **)&wn_pows, n*sizeof(Complex));
+
+   int radix[3];
+   assert(getradix(m, radix)==1);
+   cudaMemcpy(radix_device_m, radix, 3*sizeof(int), cudaMemcpyHostToDevice);
+   cuda_fft_init<<<numBlocksCol ,numThreads>>>(m, radix_device_m, ex_bit_reversal_m, wm_pows);
+
+   assert(getradix(n, radix)==1);
+   cudaMemcpy(radix_device_n, radix, 3*sizeof(int), cudaMemcpyHostToDevice);
+   cuda_fft_init<<<numBlocksRow ,numThreads>>>(n, radix_device_n, ex_bit_reversal_n, wn_pows);   
+   cudaDeviceSynchronize();
+
+gettimeofday(&before, NULL);
+
+   for(int i=0;i<REP;i++){
+      int stream_id = i%nstreams;
+      //cudaStreamSynchronize(streams[stream_id]);
+      // if(i>=nstreams)
+      //    cudaMemcpyAsync(dft_image_stream[i-nstreams], dft_image_device_stream[stream_id], m*n*sizeof(Complex), 
+      //                 cudaMemcpyDeviceToHost, streams[stream_id]);
+      cudaMemcpyAsync(dft_image_stream[stream_id], dft_image_device_stream[stream_id], m*n*sizeof(Complex), 
+                      cudaMemcpyDeviceToHost, streams[stream_id]);
+
+      cudaMemcpyAsync(image_device_stream[stream_id], image, m*n*sizeof(int), cudaMemcpyHostToDevice, streams[stream_id]);
+      
+      fft_cuda_kernel_unroll<<<n, 64, m*sizeof(Complex), streams[stream_id]>>>(image_device_stream[stream_id], 
+                     dft_image_device_stream[stream_id], ex_bit_reversal_m, radix_device_m, wm_pows, n, m);
+      fft_cuda_kernel_col_unroll<<<m, 64, n*sizeof(Complex), streams[stream_id]>>>(dft_image_device_stream[stream_id], 
+                     ex_bit_reversal_n, radix_device_n, wn_pows, n, m);
+      // cudaMemcpyAsync(dft_image_stream[stream_id], dft_image_device_stream[stream_id], m*n*sizeof(Complex), 
+      //                cudaMemcpyDeviceToHost, streams[stream_id]);
+   }
+   for(int i=0;i<nstreams; i++){
+      int stream_id = (REP+i)%nstreams;
+      // cudaMemcpyAsync(dft_image_stream[REP+i-nstreams], dft_image_device_stream[stream_id], m*n*sizeof(Complex), 
+      //                 cudaMemcpyDeviceToHost, streams[stream_id]);
+      cudaMemcpyAsync(dft_image_stream[stream_id], dft_image_device_stream[stream_id], m*n*sizeof(Complex), 
+                      cudaMemcpyDeviceToHost, streams[stream_id]);
+   }
+   cudaDeviceSynchronize();
+   
+   gettimeofday(&after, NULL);
+   computation_time += (after.tv_sec + (after.tv_usec / 1000000.0)) -
+                      (before.tv_sec + (before.tv_usec / 1000000.0));
+   
+   cudaFree(radix_device_m);cudaFree(ex_bit_reversal_m);cudaFree(wm_pows);
+   cudaFree(radix_device_n);cudaFree(ex_bit_reversal_n);cudaFree(wn_pows);
+   memcpy(dft_image, dft_image_stream[0], m*n*sizeof(Complex));
+   for(int i=0;i<nstreams;i++) {
+      //cudaStreamCreate(&streams[i]);
+      free(dft_image_stream[i]);
+      cudaFree(dft_image_device_stream[i]);
+      cudaFree(image_device_stream[i]);
+   }
+   
+}
 
 
 int main (int argc, char** argv) {
@@ -692,12 +787,14 @@ int main (int argc, char** argv) {
    // for(int i=0;i<REP; i++)
    //    fft2_cufft(idata, odata, CompData, &plan,dft_image2, n, m);
 
-   for(int i=0;i<REP; i++)
-      fft2_cuda_unroll(image, dft_image2, image_device, dft_device, n, m);
+   // for(int i=0;i<REP; i++)
+   //    fft2_cuda_unroll(image, dft_image2, image_device, dft_device, n, m);
+
+   fft2_cuda_stream(image, dft_image2, image_device, dft_device, n, m);
 
    // for(int i=0;i<REP; i++)
    //    fft2_cuda(image, dft_image2, image_device, dft_device, n, m);
-   
+
    // fft_cuda_constant_init();
    // for(int i=0;i<REP; i++)
    //    fft2_cuda_constant(image, dft_image2, image_device, dft_device);
