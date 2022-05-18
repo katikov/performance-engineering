@@ -30,7 +30,7 @@ void csr_spmv(int m, const int *A_rows, const int *A_cols_idx, const float *A_va
 void csr_spmv_parallel(int m, const int *A_rows, const int *A_cols_idx, const float *A_values, const float *B, float *C) {
     int i,j;
     int row_start, row_end;  
-    omp_set_num_threads(8);
+    omp_set_num_threads(32);
     #pragma omp parallel for private(i,j,row_start,row_end)
     for (i = 0; i < m; i++) {
         float tmp = 0.0f;

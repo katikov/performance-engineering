@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
+#include <getopt.h>
 #include "mmio.h"
 
 #ifdef CSR
@@ -35,9 +36,23 @@
  */
 void generate_mat(int m, int n, float *A, int nz) {
   int i;
-
-  for (i=0; i<(m*n); i++) 
-	A[i] = i/nz; //i/10; 
+  int randlist[m*n];
+  srand(42);
+  for (i=0; i<(m*n); i++){
+	  A[i] = rand()%256+1;
+    randlist[i] = i;
+  }
+  int cnt=0;
+  for(int i=0;i<nz;i++){
+    int id = 0; 
+    for(int j=0;j<32;j++) id = (id*256+rand()%256)%(m*n-i);
+    A[randlist[id]] = 0;
+    randlist[id]=randlist[m*n-i-1];
+  }
+  for(int i=0;i<m*n;i++){
+    if(A[i] == 0)cnt++;
+  }
+  // printf("nz=%d --- cnt=%d\n", nz, cnt);
       	
 }
 
@@ -257,10 +272,10 @@ int convert_to_coo(int m, int n, float *A, int *sA_rows, int *sA_cols, float *sA
     for (j=0; j<n; j++) {
         tmp = A[i*n+j];
         if (tmp != 0) {
-           sA_rows[checkNZ]=i;
-	   sA_cols[checkNZ]=j;
-           sA_vals[checkNZ]=tmp;
-           checkNZ++;
+          sA_rows[checkNZ]=i;
+          sA_cols[checkNZ]=j;
+          sA_vals[checkNZ]=tmp;
+          checkNZ++;
         }
     }
   }
@@ -305,41 +320,63 @@ int main (int argc, char** argv) {
 
 
 
- struct timeval before, after;
- int r, m, n, err;
- int nzA=0, is_pattern = 1;
- FILE *fa, *fc;
-  
-#ifdef GENERATE 
- m=M; n=N; nzA=M*N/10; 
-#else 
- if (argc < 3) {
-    fprintf(stderr, "Usage: %s [matrix-market-filename] [result-vector-filename]\n", argv[0]);
-    exit(1);
- }
- else {
-    if ((fa = fopen(argv[1], "rt")) == NULL) exit(1);
-    err = read_mat(&m, &n, &nzA, fa, &is_pattern);    
-    if (err == -15) {
-	printf("Matrices are incompatible! \n");
-	fclose(fa); 
-	exit(1);
+    struct timeval before, after;
+    int r, m=0, n=0, err;
+    int nzA=0, is_pattern = 1;
+    FILE *fa, *fc;
+
+    int ch;
+    int generate = 0;
+    double density = -1;
+    char* input_filename=NULL, *output_filename = NULL;
+    while ((ch = getopt(argc, argv, "hri:n:m:o:d:")) != -1)
+    {
+        switch(ch) {
+          case 'r': generate = 1; break;
+          case 'i': generate = 0; input_filename=optarg; break;
+          case 'o': output_filename=optarg; break;
+          case 'm': m = atoi(optarg); break;
+          case 'n': n = atoi(optarg); break;
+          case 'd': density = strtod(optarg, 0); break;
+          case 'h': default: 
+            fprintf(stderr, "Usage: %s [(-f matrix-market-filename) or (-r -n rows -m cols -d density)] -o result-vector-filename\n", argv[0]);
+            exit(1);
+            break;
+        }
     }
- }
-#endif
+    if(output_filename == NULL || (generate==0 && input_filename==NULL) || (generate==1 && (n<=0 || m<=0 || density<0))){
+      fprintf(stderr, "Usage: %s [(-f matrix-market-filename) or (-r -n rows -m cols -d density)] -o result-vector-filename\n", argv[0]);
+      exit(1);
+    }
 
- A = (float *)calloc(m*n,sizeof(float));
- if (A==NULL) {printf("Out of memory A! \n"); exit(1);}
+    if(generate){
+      fprintf(stderr,"n = %d\nm = %d\ndensity = %lf\n", n, m, density);
+      nzA = m*n*density;  
+    }else{
+        if ((fa = fopen(input_filename, "rt")) == NULL) exit(1);
+          err = read_mat(&m, &n, &nzA, fa, &is_pattern);    
+        if (err == -15) {
+          printf("Matrices are incompatible! \n");
+          fclose(fa); 
+          exit(1);
+        }
+    }
+    
+  A = (float *)calloc(m*n,sizeof(float));
+  if (A==NULL) {printf("Out of memory A! \n"); exit(1);}
 
-#ifdef GENERATE
-   generate_mat(m,n,A,nzA);
-#else 
-   if (nzA>0) {
-	read_sparse(fa, m,n,nzA, A, is_pattern);
+
+  if(generate){
+    generate_mat(m,n,A,m*n-nzA);
+
+  }else{
+    if (nzA>0) {
+      read_sparse(fa, m,n,nzA, A, is_pattern);
     }	
-   else 
-	read_dense(fa, m,n, A);
-   fclose(fa);
+    else 
+      read_dense(fa, m,n, A);
+    fclose(fa);
+  }
 
 #ifdef CSR
         sA_rows = (int *)calloc(m+1,sizeof(int));
@@ -374,10 +411,7 @@ int main (int argc, char** argv) {
         print_mat_coo(nzA, sA_rows, sA_cols, sA_vals);
 #endif
 
-
 #endif
-#endif 
-
  B = (float *)calloc(n,sizeof(float));
  if (B==NULL) {printf("Out of memory B! \n"); exit(1);}
 
@@ -398,10 +432,12 @@ for (r=0; r<REP; r++)
  /* Call the SpMV kernel. */
 #ifdef CSR
   csr_spmv_parallel(m,sA_rows, sA_cols_idx, sA_vals, B, C); 
+  //csr_spmv(m,sA_rows, sA_cols_idx, sA_vals, B, C); 
 #elif CSC
   csc_spmv(n,sA_cols, sA_rows_idx, sA_vals, B, C);
 #elif COO
   coo_spmv_parallel(nzA, sA_rows, sA_cols, sA_vals, B, C); 
+  //coo_spmv(nzA, sA_rows, sA_cols, sA_vals, B, C); 
 #else 
   spmv(m,n,A,B,C);
 #endif
@@ -413,7 +449,7 @@ for (r=0; r<REP; r++)
 
 #endif
 
- if ((fc = fopen(argv[2], "wt")) == NULL) exit(3);    
+ if ((fc = fopen(output_filename, "wt")) == NULL) exit(3);    
 // write_sparse(fc,n,m,C);
  write_vector(fc,m,C);
  fclose(fc);  
