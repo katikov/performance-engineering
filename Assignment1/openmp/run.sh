@@ -14,7 +14,8 @@ do
         do
             for n in {1..3..1};
             do
-                ./matmul ${row} ${col} ${row} ${d} 32
+                prun -np 1 -reserve $2 ./matmul ${row} ${col} ${row} ${d} 32
+                # ./matmul ${row} ${col} ${row} ${d} 32
             done
         done
     done
