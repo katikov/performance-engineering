@@ -360,7 +360,7 @@ int main(int argc, char **argv)
    unsigned long long int num = ((unsigned long long int)m) * n * p;
 #ifdef TIMING
    gettimeofday(&after, NULL);
-  printf("%d, %d, %d, %llu, %f, %.6f\n", m, n, p, num, density, ((after.tv_sec + (after.tv_usec / 1000000.0)) -
+  printf("%d, %d, %d, %d,%f, %llu, %f, %.6f\n", proc_count, m, n, p, m*1.0/n,num, density, ((after.tv_sec + (after.tv_usec / 1000000.0)) -
             (before.tv_sec + (before.tv_usec / 1000000.0)))/REP);
 
 #endif

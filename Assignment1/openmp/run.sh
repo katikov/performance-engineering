@@ -12,9 +12,9 @@ do
     do
         for d in ${density_plan[@]};
         do
-            for n in {1..3..1};
+            for n in {1..10..1};
             do
-                prun -np 1 -reserve $2 ./matmul ${row} ${col} ${row} ${d} 32
+                prun -np 1 -reserve $1 ./matmul ${row} ${col} ${row} ${d} 32
                 # ./matmul ${row} ${col} ${row} ${d} 32
             done
         done
