@@ -357,11 +357,11 @@ int main(int argc, char **argv)
    for (r = 0; r < REP; r++)
       matrix_mult(m, n, p, A, B, C);
 
+   unsigned long long int num = ((unsigned long long int)m) * n * p;
 #ifdef TIMING
    gettimeofday(&after, NULL);
-   printf("Reference code: %10.2f seconds \n", ((after.tv_sec + (after.tv_usec / 1000000.0)) -
-                                                (before.tv_sec + (before.tv_usec / 1000000.0))) /
-                                                   REP);
+  printf("%d, %d, %d, %llu, %f, %.6f\n", m, n, p, num, density, ((after.tv_sec + (after.tv_usec / 1000000.0)) -
+            (before.tv_sec + (before.tv_usec / 1000000.0)))/REP);
 
 #endif
    // matrix_mult_basic(m,n,p,A,B,D);

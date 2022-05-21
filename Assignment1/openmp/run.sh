@@ -1,10 +1,24 @@
+#! /bin/bash
 
-Times=3
-reservationId=3589233
+rm ./in/*
+MATRIX_TYPE=0
+SYMMETRY=0
 
-for ((i=1;i<="$Times";i++))
+row_plan=(100 400 800 1000 2000 3000 4000 5000)
+col_plan=(100 1000 5000)
+density_plan=(0.25 0.5 0.75 1.0)
+echo "Starts at: $(date)"
+
+for row in ${row_plan[@]};
 do
-    # prun -np 1 -reserve "$reservationId"  ./matmul ash958.mtx t_ash958.mtx >> res.txt
-    ./matmul ash958.mtx t_ash958.mtx >> res.txt
+    for col in ${col_plan[@]};
+    do
+        for d in ${density_plan[@]};
+        do
+            for n in {1..3..1};
+            do
+                ./matmul ${row} ${col} ${row} ${d} 32
+            done
+        done
+    done
 done
-
