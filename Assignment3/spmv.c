@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <sys/time.h>
 #include <getopt.h>
+#include <string.h> 
 #include "mmio.h"
 
 #ifdef CSR
@@ -307,7 +308,7 @@ void print_mat_coo(int nzA, int *sA_rows, int *sA_cols, float *sA_vals)
 
 int main (int argc, char** argv) {
  float *A, *B, *C;
- char alg[3];
+ char *alg = "default";
 #ifdef CSR
  float *sA_vals;
  int *sA_rows, *sA_cols_idx;
