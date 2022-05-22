@@ -28,7 +28,7 @@
 #define N  512
 #define M  512
 
-#define REP 1
+#define REP 10
 
 
 /* 
@@ -350,7 +350,7 @@ int main (int argc, char** argv) {
     }
 
     if(generate){
-      fprintf(stderr,"n = %d\nm = %d\ndensity = %lf\n", n, m, density);
+      // fprintf(stderr,"n = %d\nm = %d\ndensity = %lf\n", n, m, density);
       nzA = m*n*density;  
     }else{
         if ((fa = fopen(input_filename, "rt")) == NULL) exit(1);
@@ -444,7 +444,10 @@ for (r=0; r<REP; r++)
 
 #ifdef TIMING
   gettimeofday(&after, NULL);
-  printf("Reference code: %10.6f seconds \n", ((after.tv_sec + (after.tv_usec / 1000000.0)) -
+  // printf("Reference code: %10.6f seconds \n", ((after.tv_sec + (after.tv_usec / 1000000.0)) -
+            // (before.tv_sec + (before.tv_usec / 1000000.0)))/REP);
+  unsigned long long int num = ((unsigned long long int)m) * n;
+  printf("%d, %d, %d,%f, %llu, %f, %.6f\n", 32, m, n, m*1.0/n,num, density, ((after.tv_sec + (after.tv_usec / 1000000.0)) -
             (before.tv_sec + (before.tv_usec / 1000000.0)))/REP);
 
 #endif
