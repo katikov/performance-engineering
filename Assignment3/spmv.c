@@ -32,6 +32,21 @@
 #define REP 30
 
 
+double inline get_density(int m, int n, float *A) {
+   int i, j;
+   long long total, zero=0;
+   total = m * n;
+   for (i = 0; i < m; i++)
+   {
+      for(j=0; j<n; j++) {
+         if (A[i*n+j] !=0){
+            zero++;
+         }
+      }
+   }
+   return 1.0 - zero * 1.0 / total;
+}
+
 /* 
  * for nz=1 - dense matrix; for nz>1 - sparse matrix with every nz element non-0; for nz=0: error
  */
@@ -344,13 +359,13 @@ int main (int argc, char** argv) {
           case 'n': n = atoi(optarg); break;
           case 'd': density = strtod(optarg, 0); break;
           case 'h': default: 
-            fprintf(stderr, "Usage: %s [(-f matrix-market-filename) or (-r -n rows -m cols -d density)] -o result-vector-filename\n", argv[0]);
+            fprintf(stderr, "Usage: %s [(-i matrix-market-filename) or (-r -m rows -n cols -d density)] -o result-vector-filename\n", argv[0]);
             exit(1);
             break;
         }
     }
     if(output_filename == NULL || (generate==0 && input_filename==NULL) || (generate==1 && (n<=0 || m<=0 || density<0))){
-      fprintf(stderr, "Usage: %s [(-f matrix-market-filename) or (-r -n rows -m cols -d density)] -o result-vector-filename\n", argv[0]);
+      fprintf(stderr, "Usage: %s [(-i matrix-market-filename) or (-r -m rows -n cols -d density)] -o result-vector-filename\n", argv[0]);
       exit(1);
     }
 
@@ -452,7 +467,7 @@ for (r=0; r<REP; r++)
   // printf("Reference code: %10.6f seconds \n", ((after.tv_sec + (after.tv_usec / 1000000.0)) -
             // (before.tv_sec + (before.tv_usec / 1000000.0)))/REP);
   unsigned long long int num = ((unsigned long long int)m) * n;
-  printf("%s,%d, %d, %d,%f, %llu, %f, %.6f\n", alg, 32, m, n, m*1.0/n,num, density, ((after.tv_sec + (after.tv_usec / 1000000.0)) -
+  printf("%s,%d, %d, %d,%f, %llu, %f, %.6f\n", alg, 32, m, n, m*1.0/n,num, get_density(m, n, A), ((after.tv_sec + (after.tv_usec / 1000000.0)) -
             (before.tv_sec + (before.tv_usec / 1000000.0)))/REP);
 
 #endif
