@@ -17,12 +17,11 @@ double inline get_density(int m, int n, float *A) {
    for (i = 0; i < m; i++)
    {
       for(j=0; j<n; j++) {
-         if (A[i*n+j] !=0){
+         if (A[i*n+j] ==0){
             zero++;
          }
       }
    }
-   printf("%d, %d\n", total, zero);
    return 1.0 - zero * 1.0 / total;
 }
 
