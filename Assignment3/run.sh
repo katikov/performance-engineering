@@ -14,7 +14,7 @@ do
         do
             for n in {1..10..1};
             do
-                prun -np 1 -reserve $1 ./coo_spmv -r -n ${row} -m ${col} -d ${d} -o tmp
+                prun -np 1 -reserve $1 ./coo_spmv -r -m ${row} -n ${col} -d ${d} -o tmp
             done
         done
     done

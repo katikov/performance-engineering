@@ -29,7 +29,7 @@
 #define N  512
 #define M  512
 
-#define REP 10
+#define REP 30
 
 
 /* 
