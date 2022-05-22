@@ -1,0 +1,149 @@
+---
+title: "SPVM"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(svglite)
+library(dplyr)
+library(RColorBrewer) 
+library(scales)
+library(colorspace)
+library(broom)
+library(PerformanceAnalytics)
+```
+
+## Model
+### Building
+Use randomly generated data to train, and data from real matrix to validate, openmp version with 32 threads
+
+### Training plan
+
+row_plan=(100 200 300 400 500 600 800 1000 1500 2000 3000 4000 5000)
+
+row_plan=(100 200 300 400 500 600 800 1000 1500 2000 3000 4000 5000)
+
+density_plan=(0.001 0.005  0.01 0.05 0.1 0.25 0.5 0.75 1.0)
+
+Plan is randomly selected rather than complete combinations, 300 plans are selected.
+
+Repeat 5 execution of app per selected plan, 1000 to 30000 spvm operations per execution.
+
+### Best model
+
+time~non_zero+n:density+m (for density < 0.2 and >= 0.2, the data needs to be filtered and model needs to be rebuilt)
+
+Adjusted R-squared:  0.9143
+
+p-value: < 2.2e-16
+
+paired t-test shows the prediction and truth can be significantly different.p-value = 0.01505
+
+### Error rate stat
+
+Min: 0.03143 
+
+1st Qu: 0.24823
+
+Median: 0.51081
+
+Mean: 0.52367
+
+3rd Qu: 0.75745   
+
+Max: 1.22819 
+
+
+```{r}
+data <- read.csv("spmv.csv")
+v_data  <- read.csv("spmv_validate.csv")
+
+v_data <- v_data %>%
+  filter(alg=="COO")
+
+data <- data %>% 
+    #filter(core <=16) %>%
+      #filter(core%%2 ==0) %>%
+  # filter(n<1500) %>%
+  filter(density < 0.2) %>%
+  #filter(ratio <1) %>%
+    #filter(Stack.Size %in% c("1 MB", NA)) %>%
+  #filter(size == 1000000) %>%
+  arrange(time) 
+
+chart.Correlation(data[,3:9], histogram = TRUE, method = "pearson")
+
+data$m_norm = scale(data$m)
+data$non_zero_norm = scale(data$non_zero)
+data$density_norm = scale(data$density)
+data$n_norm = scale(data$n)
+data$log_n=log(data$n)
+v_data$log_n=log(v_data$n)
+data$log_m=log(data$m)
+v_data$log_m=log(v_data$m)
+
+model=lm(time~non_zero+n:density+m, data=data)
+anova(model)
+summary(model)
+new <- data.frame(shape = v_data$shape, n = v_data$n, density=v_data$density,non_zero=v_data$non_zero, m=v_data$m, log_n=v_data$log_n, log_m=v_data$log_m)
+v_data$predict_time = predict(model,new)
+v_data$error = v_data$time-v_data$predict_time
+v_data$error_rate = abs(v_data$error)/v_data$time
+qqnorm(v_data$error_rate, main = "Q-Q Plot for error rate")
+qqline(v_data$error_rate)
+# test if prediction=truth
+t.test(v_data$time, v_data$predict_time, paired = TRUE, alternative = "two.sided")
+# error rate stat
+summary(v_data$error_rate)
+
+
+# assumption check
+par(mfrow = c(2, 2))
+plot(model)
+```
+
+```{r}
+pred.int <- predict(model, interval = "prediction")
+mydata <- cbind(data, pred.int)
+
+p <- ggplot(mydata, aes((non_zero), (time))) +
+  geom_point() +
+  stat_smooth(method = lm)
+# 3. Add prediction intervals
+p + geom_line(aes(y = (lwr)), color = "red", linetype = "dashed")+
+    geom_line(aes(y = (upr)), color = "red", linetype = "dashed")
+```
+
+## scatter
+```{r}
+data$density=as.factor(data$density)
+data$m=as.factor(data$m)
+data$n=as.factor(data$n)
+data$shape=as.factor(data$shape)
+data$N=as.factor(data$N)
+
+image=data %>%
+  ggplot( aes(x=log(non_zero), y=log(time),color=m,group=m )) +
+  geom_point()+
+  geom_line()+
+  #scale_color_manual(values=c) +
+  scale_y_continuous(name="time",breaks = scales::pretty_breaks(n = 10)) 
+image
+
+
+```
+
+## Barplot
+```{r}
+data$density=as.factor(data$density)
+data$N=as.factor(data$N)
+image=data %>%
+  ggplot( aes(x=N, y=time,color=density,fill=density )) +
+  geom_bar(stat="identity", position=position_dodge())+
+  #scale_color_manual(values=c) +
+  scale_y_continuous(name="time",breaks = scales::pretty_breaks(n = 10)) +
+    theme(axis.text.x = element_text(angle = 90))
+image
+```

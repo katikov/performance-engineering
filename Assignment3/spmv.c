@@ -29,7 +29,7 @@
 #define N  512
 #define M  512
 
-#define REP 30000
+#define REP 20000
 
 
 double inline get_density(int m, int n, float *A) {
