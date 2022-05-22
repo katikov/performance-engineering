@@ -307,15 +307,19 @@ void print_mat_coo(int nzA, int *sA_rows, int *sA_cols, float *sA_vals)
 
 int main (int argc, char** argv) {
  float *A, *B, *C;
+ char alg[3];
 #ifdef CSR
  float *sA_vals;
  int *sA_rows, *sA_cols_idx;
+ alg = "CSR";
 #elif CSC
  float *sA_vals;
  int *sA_cols, *sA_rows_idx;
+ alg = "CSC";
 #elif COO
  float *sA_vals;
  int *sA_cols, *sA_rows;
+ alg = "COO";
 #endif
 
 
@@ -447,7 +451,7 @@ for (r=0; r<REP; r++)
   // printf("Reference code: %10.6f seconds \n", ((after.tv_sec + (after.tv_usec / 1000000.0)) -
             // (before.tv_sec + (before.tv_usec / 1000000.0)))/REP);
   unsigned long long int num = ((unsigned long long int)m) * n;
-  printf("%d, %d, %d,%f, %llu, %f, %.6f\n", 32, m, n, m*1.0/n,num, density, ((after.tv_sec + (after.tv_usec / 1000000.0)) -
+  printf("%s,%d, %d, %d,%f, %llu, %f, %.6f\n", alg, 32, m, n, m*1.0/n,num, density, ((after.tv_sec + (after.tv_usec / 1000000.0)) -
             (before.tv_sec + (before.tv_usec / 1000000.0)))/REP);
 
 #endif
@@ -456,7 +460,6 @@ for (r=0; r<REP; r++)
 // write_sparse(fc,n,m,C);
  write_vector(fc,m,C);
  fclose(fc);  
-
  free(A);
  free(B); 
  free(C);
