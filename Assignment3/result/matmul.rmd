@@ -1,0 +1,128 @@
+---
+title: "Matmul"
+output:
+  html_document: default
+  pdf_document: default
+---
+## Model
+### Building
+Use randomly generated data to train, and data from previous asisgnments to validate, openmp version with 32 threads
+
+### Training plan
+
+row_plan=(100 400 800 1000 2000 3000 4000 5000)
+
+col_plan=(100 1000 5000)
+
+density_plan=(0.25 0.5 0.75 1.0)
+
+Repeat 10 execution of app per plan, 10 matmul operations per execution.
+
+### Best model
+
+time ~ N*shape + N, shape is the ratio of row/col
+
+Adjusted R-squared:  0.9959 
+
+p-value: < 2.2e-16
+
+paired t-test shows no evidence the prediction and truth is significantly different.p-value = 0.6986
+
+### Error rate stat
+
+Min: 0.000115  
+
+1st Qu: 0.041381 
+
+Median: 0.108451 
+
+Mean: 0.384713
+
+3rd Qu: 0.298379    
+
+Max: 15.442117 
+     
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(svglite)
+library(dplyr)
+library(RColorBrewer) 
+library(scales)
+library(colorspace)
+library(broom)
+```
+
+```{r}
+data <- read.csv("matmul.csv")
+v_data  <- read.csv("matmul_validate.csv")
+v_data$time=as.numeric(v_data$time)
+
+model=lm(time~N*shape-shape, data=data)
+summary(model)
+anova(model)
+```
+## Predict & validate
+```{r}
+new <- data.frame(N = v_data$N, density=v_data$density,shape=v_data$shape)
+v_data$predict_time = predict(model,new)
+v_data$error = v_data$time-v_data$predict_time
+v_data$error_rate = abs(v_data$error)/v_data$time
+qqnorm(v_data$error_rate, main = "Q-Q Plot for error rate")
+qqline(v_data$error_rate)
+# test if prediction=truth
+t.test(v_data$time, v_data$predict_time, paired = TRUE, alternative = "two.sided")
+# error rate stat
+summary(v_data$error_rate)
+
+# assumption check
+par(mfrow = c(2, 2))
+plot(model)
+```
+
+
+```{r}
+# prediction & confidence interval
+pred.int <- predict(model, interval = "prediction")
+mydata <- cbind(data, pred.int)
+
+p <- ggplot(mydata, aes(N, time)) +
+  geom_point() +
+  stat_smooth(method = lm)
+p + geom_line(aes(y = lwr), color = "red", linetype = "dashed")+
+    geom_line(aes(y = upr), color = "red", linetype = "dashed")
+```
+## plot
+### Platte
+```{r}
+colourCount = length(unique(data$density))
+getPalette = colorRampPalette(brewer.pal(8, "Spectral"))
+
+c=darken(getPalette(colourCount), amount = 0.08)
+c=desaturate(c, amount = -0.4)
+#show_col(c)
+```
+
+### line
+```{r}
+data$density=as.factor(data$density)
+image=data %>%
+  ggplot( aes(x=N, y=time,color=density)) +
+  geom_point()+
+  geom_line()+
+  scale_y_continuous(name="time",breaks = scales::pretty_breaks(n = 10)) 
+image
+
+```
+
+
+```{r}
+data$density=as.factor(data$density)
+data$N=as.factor(data$N)
+image=data %>%
+  ggplot( aes(x=N, y=time,color=density,fill=density )) +
+  geom_bar(stat="identity", position=position_dodge())+
+  scale_y_continuous(name="time",breaks = scales::pretty_breaks(n = 10)) 
+image
+``````
