@@ -1,6 +1,6 @@
 #! /bin/bash
 
-row_plan=(100 800 1000 2000 3000 4000 5000)
+row_plan=(100 800 1000)
 col_plan=(100 800 1000 2000 3000 4000 5000)
 density_plan=(0.25 0.5 0.75 1.0)
 echo "Starts at: $(date)"
