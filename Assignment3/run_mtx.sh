@@ -9,12 +9,14 @@ echo "===${APP_NAME}==="
 echo "${N_MTX} matrix to measure"
 for d in $(find "data" -maxdepth 1 -type f)
 do 
+    MTX=${d##*/}
+    MTX=${MTX%%.*}
     for ((i=1;i<=N_EXP;i++));
     do
-        prun -np 1 -reserve $1 ./coo_spmv -i $d -o tmp
-        prun -np 1 -reserve $1 ./csr_spmv -i $d -o tmp
-        # TIME=$(./matmul $d tmp.mtx result.mtx)
-        # echo $MTX,$1,$TIME
+        TIME=$(prun -np 1 -reserve $1 ./coo_spmv -i $d -o tmp)
+        echo $MTX,$TIME
+        TIME=$(prun -np 1 -reserve $1 ./csr_spmv -i $d -o tmp)
+        echo $MTX,$TIME
     done
 done
 
