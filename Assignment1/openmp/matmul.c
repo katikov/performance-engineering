@@ -10,9 +10,9 @@
 
 #define REP 10
 
-double inline density(int m, int n, float *A) {
+double inline get_density(int m, int n, float *A) {
    int i, j;
-   long long total, zero;
+   long long total, zero=0;
    total = m * n;
    for (i = 0; i < m; i++)
    {
