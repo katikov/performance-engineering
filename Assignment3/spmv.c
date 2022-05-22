@@ -29,7 +29,7 @@
 #define N  512
 #define M  512
 
-#define REP 30
+#define REP 30000
 
 
 double inline get_density(int m, int n, float *A) {
@@ -467,7 +467,7 @@ for (r=0; r<REP; r++)
   // printf("Reference code: %10.6f seconds \n", ((after.tv_sec + (after.tv_usec / 1000000.0)) -
             // (before.tv_sec + (before.tv_usec / 1000000.0)))/REP);
   unsigned long long int num = ((unsigned long long int)m) * n;
-  printf("%s,%d, %d, %d,%f, %llu, %f, %.6f\n", alg, 32, m, n, m*1.0/n,num, get_density(m, n, A), ((after.tv_sec + (after.tv_usec / 1000000.0)) -
+  printf("%s,%d, %d, %d,%f, %llu, %f, %.10f\n", alg, 32, m, n, m*1.0/n,num, get_density(m, n, A), ((after.tv_sec + (after.tv_usec / 1000000.0)) -
             (before.tv_sec + (before.tv_usec / 1000000.0)))/REP);
 
 #endif

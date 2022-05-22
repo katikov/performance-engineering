@@ -1,6 +1,6 @@
 #! /bin/bash
 
-N_EXP=30
+N_EXP=10
 
 # Count the matrix
 N_MTX=$(ls data | wc -l)
