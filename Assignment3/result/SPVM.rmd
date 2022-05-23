@@ -41,19 +41,7 @@ p-value: < 2.2e-16
 
 paired t-test shows the prediction and truth can be significantly different.p-value = 0.01505
 
-### Error rate stat
 
-Min: 0.03143 
-
-1st Qu: 0.24823
-
-Median: 0.51081
-
-Mean: 0.52367
-
-3rd Qu: 0.75745   
-
-Max: 1.22819 
 
 
 ```{r}
@@ -90,11 +78,15 @@ summary(model)
 new <- data.frame(shape = v_data$shape, n = v_data$n, density=v_data$density,non_zero=v_data$non_zero, m=v_data$m, log_n=v_data$log_n, log_m=v_data$log_m)
 v_data$predict_time = predict(model,new)
 v_data$error = v_data$time-v_data$predict_time
-v_data$error_rate = abs(v_data$error)/v_data$time
+v_data$error_rate = abs(v_data$error)/v_data$predict_time
 qqnorm(v_data$error_rate, main = "Q-Q Plot for error rate")
 qqline(v_data$error_rate)
 # test if prediction=truth
 t.test(v_data$time, v_data$predict_time, paired = TRUE, alternative = "two.sided")
+
+```
+### Error rate stat
+```{r}
 # error rate stat
 summary(v_data$error_rate)
 
@@ -116,7 +108,7 @@ p + geom_line(aes(y = (lwr)), color = "red", linetype = "dashed")+
     geom_line(aes(y = (upr)), color = "red", linetype = "dashed")
 ```
 
-## scatter
+## scatter-density < 0.2
 ```{r}
 data$density=as.factor(data$density)
 data$m=as.factor(data$m)
@@ -129,10 +121,46 @@ image=data %>%
   geom_point()+
   geom_line()+
   #scale_color_manual(values=c) +
-  scale_y_continuous(name="time",breaks = scales::pretty_breaks(n = 10)) 
+  scale_y_continuous(name="log(time)",breaks = scales::pretty_breaks(n = 10)) 
+image
+```
+
+
+## scatter - density full
+```{r}
+data <- read.csv("spmv.csv")
+data$density=as.factor(data$density)
+data$m=as.factor(data$m)
+data$n=as.factor(data$n)
+data$shape=as.factor(data$shape)
+data$N=as.factor(data$N)
+image=data %>%
+  ggplot( aes(x=log(non_zero), y=log(time),color=m,group=m )) +
+  geom_point()+
+  geom_line()+
+  #scale_color_manual(values=c) +
+  scale_y_continuous(name="log(time)",breaks = scales::pretty_breaks(n = 10)) 
 image
 
+```
+## scatter - fixed col size ==2000, grouped by density
 
+```{r}
+data <- read.csv("spmv.csv")
+unique(data$n)
+data$density=as.factor(data$density)
+data$m=as.factor(data$m)
+data$n=as.factor(data$n)
+data$shape=as.factor(data$shape)
+data$N=as.factor(data$N)
+data <- data %>% filter(n==2000) 
+image=data %>%
+  ggplot( aes(x=log(non_zero), y=log(time),color=density,group=density )) +
+  geom_point()+
+  geom_line()+
+  #scale_color_manual(values=c) +
+  scale_y_continuous(name="log(time)",breaks = scales::pretty_breaks(n = 10)) 
+image
 ```
 
 ## Barplot

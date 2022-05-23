@@ -28,20 +28,6 @@ p-value: < 2.2e-16
 
 paired t-test shows no evidence the prediction and truth is significantly different.p-value = 0.6986
 
-### Error rate stat
-
-Min: 0.000115  
-
-1st Qu: 0.041381 
-
-Median: 0.108451 
-
-Mean: 0.384713
-
-3rd Qu: 0.298379    
-
-Max: 15.442117 
-     
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -68,11 +54,15 @@ anova(model)
 new <- data.frame(N = v_data$N, density=v_data$density,shape=v_data$shape)
 v_data$predict_time = predict(model,new)
 v_data$error = v_data$time-v_data$predict_time
-v_data$error_rate = abs(v_data$error)/v_data$time
+v_data$error_rate = abs(v_data$error)/v_data$predict_time
 qqnorm(v_data$error_rate, main = "Q-Q Plot for error rate")
 qqline(v_data$error_rate)
 # test if prediction=truth
 t.test(v_data$time, v_data$predict_time, paired = TRUE, alternative = "two.sided")
+
+```
+### Error rate stat
+```{r}
 # error rate stat
 summary(v_data$error_rate)
 
