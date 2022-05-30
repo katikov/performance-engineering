@@ -1,6 +1,6 @@
 # See LICENSE.txt for license details.
 CXX_FLAGS += -std=c++11 -O3 -Wall
-PAR_FLAG = -fopenmp
+PAR_FLAG = -fopenmp -L/cm/shared/package/likwid-4.2.0/lib -I/cm/shared/package/likwid-4.2.0/include -llikwid
 #GENERATE = -D GENERATE
 GENERATE = 
 TIMING = -D TIMING
