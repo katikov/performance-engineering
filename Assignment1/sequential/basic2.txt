@@ -1,0 +1,35 @@
+rm -f matmul transpose
+g++ -std=c++11 -O3 -Wall -ftree-vectorize  -fopenmp  -D TIMING -o matmul matmul.c mmio.c 
+g++ -std=c++11 -O3 -Wall -ftree-vectorize  -fopenmp  -o transpose transpose.c mmio.c 
+===sequential===
+1 matrix to measure
+tols1090,better,0.277857
+tols1090,better,0.274633
+tols1090,better,0.282240
+tols1090,better,0.278389
+tols1090,better,0.278226
+tols1090,better,0.279889
+tols1090,better,0.258968
+tols1090,better,0.278922
+tols1090,better,0.276434
+tols1090,better,0.284209
+tols1090,better,0.280234
+tols1090,better,0.276655
+tols1090,better,0.277164
+tols1090,better,0.277925
+tols1090,better,0.280788
+tols1090,better,0.263420
+tols1090,better,0.260895
+tols1090,better,0.276831
+tols1090,better,0.262406
+tols1090,better,0.268334
+tols1090,better,0.275814
+tols1090,better,0.278681
+tols1090,better,0.279653
+tols1090,better,0.276207
+tols1090,better,0.278663
+tols1090,better,0.269564
+tols1090,better,0.278900
+tols1090,better,0.280394
+tols1090,better,0.276065
+tols1090,better,0.280350
