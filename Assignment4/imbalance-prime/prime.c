@@ -26,6 +26,7 @@ int main (int argc, char** argv) {
     long long n = N;
     proc_count =  atoi(argv[1]);
     if(argc >= 3) n = strtoll(argv[2], NULL, 10);
+    omp_set_dynamic(0);
     omp_set_num_threads(proc_count);
     long long cnt = 0;
 

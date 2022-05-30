@@ -4,221 +4,258 @@
 #include <omp.h>
 #include "mmio.h"
 
-#define N  4096
-#define M  4096
-#define P  4096
+#define N 4096
+#define M 4096
+#define P 4096
 
-#define REP 100
+#define REP 1
 
-
-
-void inline matrix_add(int m, int n, float *A, float *B, float *C) {
+void inline matrix_add(int m, int n, float *A, float *B, float *C)
+{
    int i, j;
-   # pragma omp parallel for private(i,j)
-   for(i=0; i<m; i++) 
-      #pragma omp simd
-      for(j=0; j<n; j++){
-         C[i*m+j] = A[i*m+j] + B[i*m+j];
+   omp_set_dynamic(0);
+   omp_set_num_threads(32);
+#pragma omp parallel for private(i, j)
+   for (i = 0; i < m; i++)
+#pragma omp simd
+      for (j = 0; j < n; j++)
+      {
+         C[i * m + j] = A[i * m + j] + B[i * m + j];
       }
 }
 
-void generate_mat(int m, int n, float *A, float *B) {
-  int i;
+void generate_mat(int m, int n, float *A, float *B)
+{
+   int i;
 
-  for (i=0; i<(m*n); i++) A[i] = 1; //i/10; 
-  for (i=0; i<(m*n); i++) B[i] = 1; //i/5;
-
+   for (i = 0; i < (m * n); i++)
+      A[i] = 1; // i/10;
+   for (i = 0; i < (m * n); i++)
+      B[i] = 1; // i/5;
 }
 
-void read_sparse(FILE *f, int m, int n, int nz, float *A) {
-  int i, row, col;
-  float val;  
- 
-    /* NOTE: when reading in doubles, ANSI C requires the use of the "l"  */
-    /*   specifier as in "%lg", "%lf", "%le", otherwise errors will occur */
-    /*  (ANSI C X3.159-1989, Sec. 4.9.6.2, p. 136 lines 13-15)            */
+void read_sparse(FILE *f, int m, int n, int nz, float *A)
+{
+   int i, row, col;
+   float val;
 
-    for (i=0; i<nz; i++)
-    {
-        fscanf(f, "%d %d %f\n", &row, &col, &val);
-        A[(row-1)*n+col-1] = val;   /* adjust from 1-based to 0-based */
-    }
+   /* NOTE: when reading in doubles, ANSI C requires the use of the "l"  */
+   /*   specifier as in "%lg", "%lf", "%le", otherwise errors will occur */
+   /*  (ANSI C X3.159-1989, Sec. 4.9.6.2, p. 136 lines 13-15)            */
 
+   for (i = 0; i < nz; i++)
+   {
+      fscanf(f, "%d %d %f\n", &row, &col, &val);
+      A[(row - 1) * n + col - 1] = val; /* adjust from 1-based to 0-based */
+   }
 }
 
-void write_sparse(FILE *f, int m, int p, const float *C) {
-   int i, nz=0; 
+void write_sparse(FILE *f, int m, int p, const float *C)
+{
+   int i, nz = 0;
    MM_typecode matcode;
 
-   for (i=0; i<m*p; i++) if (C[i] != 0.0) nz++; 
+   for (i = 0; i < m * p; i++)
+      if (C[i] != 0.0)
+         nz++;
 
-    mm_initialize_typecode(&matcode);
-    mm_set_matrix(&matcode);
-    mm_set_coordinate(&matcode);
-    mm_set_real(&matcode);
+   mm_initialize_typecode(&matcode);
+   mm_set_matrix(&matcode);
+   mm_set_coordinate(&matcode);
+   mm_set_real(&matcode);
 
-    mm_write_banner(f, matcode); 
-    mm_write_mtx_crd_size(f, m, p, nz);
+   mm_write_banner(f, matcode);
+   mm_write_mtx_crd_size(f, m, p, nz);
 
-    for (i=0; i<m*p; i++) {
-	if (C[i] != 0.0) 
-          fprintf(f, "%d %d %f\n", i/p+1, i%p+1, C[i]);
-    }
-
+   for (i = 0; i < m * p; i++)
+   {
+      if (C[i] != 0.0)
+         fprintf(f, "%d %d %f\n", i / p + 1, i % p + 1, C[i]);
+   }
 }
 
-void read_dense(FILE *f, int m, int n, float *A) {
-  int row, col;
+void read_dense(FILE *f, int m, int n, float *A)
+{
+   int row, col;
 
-  for(row=0; row<m; row++) { 
-     for (col=0; col<n; col++) {
-        fscanf(f, "%f ", &A[row*n+col]); 
-//	printf("%20.19f \n", A[row*(*n)+col]);
-     }
-  } 
+   for (row = 0; row < m; row++)
+   {
+      for (col = 0; col < n; col++)
+      {
+         fscanf(f, "%f ", &A[row * n + col]);
+         //	printf("%20.19f \n", A[row*(*n)+col]);
+      }
+   }
 }
 
+int read_mat(int *m, int *n, int *nzA, int *nzB, FILE *fa, FILE *fb)
+{
+   MM_typecode ta, tb;
+   int ret_code;
 
-int read_mat(int *m, int *n, int *nzA, int *nzB, FILE* fa, FILE *fb) {
-  MM_typecode ta, tb;
-  int ret_code; 
+   if (mm_read_banner(fa, &ta) != 0)
+   {
+      printf("Could not process Matrix Market banneri for A.\n");
+      return -3;
+   }
+   if (mm_read_banner(fb, &tb) != 0)
+   {
+      printf("Could not process Matrix Market banner for B.\n");
+      return -4;
+   }
 
-  if (mm_read_banner(fa, &ta) != 0)
-    {
-        printf("Could not process Matrix Market banneri for A.\n");
-        return -3;
-    }
-  if (mm_read_banner(fb, &tb) != 0) 
-    {
-        printf("Could not process Matrix Market banner for B.\n");
-        return -4;        
-    }
+   if (mm_is_complex(ta))
+      return -6;
+   if (mm_is_complex(tb))
+      return -7;
 
-  if (mm_is_complex(ta)) return -6;
-  if (mm_is_complex(tb)) return -7; 
+   if (mm_is_matrix(ta) && mm_is_sparse(ta))
+   {
+      if ((ret_code = mm_read_mtx_crd_size(fa, m, n, nzA)) != 0)
+         return -10;
+   }
+   else if (mm_is_matrix(ta) && mm_is_array(ta))
+   {
+      *nzA = 0;
+      if ((ret_code = mm_read_mtx_array_size(fa, m, n)) != 0)
+         return -11;
+   }
+   else
+      return -8;
 
-  if (mm_is_matrix(ta) && mm_is_sparse(ta))
-    {
-        if ((ret_code = mm_read_mtx_crd_size(fa, m, n, nzA)) !=0)
-           return -10;
-    }
-  else if (mm_is_matrix(ta) && mm_is_array(ta)) {
-	*nzA = 0;
-        if ((ret_code = mm_read_mtx_array_size(fa, m, n)) !=0)
-           return -11;
+   int m1, n1;
+   if (mm_is_matrix(tb) && mm_is_sparse(tb))
+   {
+      if ((ret_code = mm_read_mtx_crd_size(fb, &m1, &n1, nzB)) != 0)
+         return -10;
+   }
+   else if (mm_is_matrix(tb) && mm_is_array(tb))
+   {
+      *nzB = 0;
+      if ((ret_code = mm_read_mtx_array_size(fb, &m1, &n1)) != 0)
+         return -11;
+   }
+   else
+      return -9;
 
-    }
-  else return -8; 
+   if (*n != n1 || *m != m1)
+      return -15;
 
-int m1,n1;
-  if (mm_is_matrix(tb) && mm_is_sparse(tb))
-    {
-        if ((ret_code = mm_read_mtx_crd_size(fb, &m1, &n1, nzB)) !=0)
-           return -10;
-    }
-  else if (mm_is_matrix(tb) && mm_is_array(tb)) {
-	*nzB = 0;
-        if ((ret_code = mm_read_mtx_array_size(fb, &m1, &n1)) !=0)
-           return -11;
-  
-    }
-  else return -9;
-  
-  if (*n!=n1 || *m !=m1) return -15;
-  
-  return 0;
-    /* find out size of sparse matrix .... */
+   return 0;
+   /* find out size of sparse matrix .... */
 }
 
-int main (int argc, char** argv) {
- float *A, *B, *C;
+int main(int argc, char **argv)
+{
+   float *A, *B, *C;
 #ifdef TIMING
- struct timeval before, after;
+   struct timeval before, after;
 #endif
- int m, n, r, err;
- int nzA=0, nzB=0;
- FILE *fa, *fb, *fc; 
- int proc_count = 1; 
-#ifdef GENERATE 
-if (argc < 2) {
-    fprintf(stderr, "Usage: %s [thread_num]\n", argv[0]);
-    exit(1);
- }
- m=M; n=N;
- proc_count = atoi(argv[1]);
-#else 
- if (argc < 5) {
-    fprintf(stderr, "Usage: %s [martix1] [matrix2] [resultmatrix] [thread_num]\n", argv[0]);
-    exit(1);
- }
- else {
-    if ((fa = fopen(argv[1], "rt")) == NULL) exit(1);
-    if ((fb = fopen(argv[2], "rt")) == NULL) exit(2);
-    err = read_mat(&m, &n, &nzA, &nzB, fa,fb);    
-    if (err == -15) {
-	printf("Matrices are incompatible! \n");
-	fclose(fa); fclose(fb); 
-	exit(1);
-    }
-    proc_count = atoi(argv[4]);
- }
+   int m, n, r, err;
+   int nzA = 0, nzB = 0;
+   FILE *fa, *fb, *fc;
+   int proc_count = 1;
+#ifdef GENERATE
+   if (argc < 2)
+   {
+      fprintf(stderr, "Usage: %s [thread_num]\n", argv[0]);
+      exit(1);
+   }
+   m = M;
+   n = N;
+   proc_count = atoi(argv[1]);
+#else
+   if (argc < 5)
+   {
+      fprintf(stderr, "Usage: %s [martix1] [matrix2] [resultmatrix] [thread_num]\n", argv[0]);
+      exit(1);
+   }
+   else
+   {
+      if ((fa = fopen(argv[1], "rt")) == NULL)
+         exit(1);
+      if ((fb = fopen(argv[2], "rt")) == NULL)
+         exit(2);
+      err = read_mat(&m, &n, &nzA, &nzB, fa, fb);
+      if (err == -15)
+      {
+         printf("Matrices are incompatible! \n");
+         fclose(fa);
+         fclose(fb);
+         exit(1);
+      }
+      proc_count = atoi(argv[4]);
+   }
 #endif
 
+   omp_set_num_threads(proc_count);
+   // omp_set_schedule(omp_heat_parallel_type + 1, chunk_size);
 
-omp_set_num_threads(proc_count);
-//omp_set_schedule(omp_heat_parallel_type + 1, chunk_size);
-
- A = (float *)calloc(m*n,sizeof(float));
- if (A==NULL) {printf("Out of memory A! \n"); exit(1);}
- B = (float *)calloc(m*n,sizeof(float));
- if (B==NULL) {printf("Out of memory B! \n"); exit(1);}
+   A = (float *)calloc(m * n, sizeof(float));
+   if (A == NULL)
+   {
+      printf("Out of memory A! \n");
+      exit(1);
+   }
+   B = (float *)calloc(m * n, sizeof(float));
+   if (B == NULL)
+   {
+      printf("Out of memory B! \n");
+      exit(1);
+   }
 
 #ifdef GENERATE
-   generate_mat(m,n,A,B);
-#else 
-   if (nzA>0)
-	read_sparse(fa, m,n,nzA, A);
-   else 
-	read_dense(fa, m,n, A);
-   if (nzB>0)
-        read_sparse(fb, m,n, nzB, B);
+   generate_mat(m, n, A, B);
+#else
+   if (nzA > 0)
+      read_sparse(fa, m, n, nzA, A);
    else
-        read_dense(fb, m,n, B); 
-   fclose(fa); 
+      read_dense(fa, m, n, A);
+   if (nzB > 0)
+      read_sparse(fb, m, n, nzB, B);
+   else
+      read_dense(fb, m, n, B);
+   fclose(fa);
    fclose(fb);
 #endif
 
- C = (float *)calloc(m*n,sizeof(float));
- if (C==NULL) {printf("Out of memory C1! \n"); exit(1);}
+   C = (float *)calloc(m * n, sizeof(float));
+   if (C == NULL)
+   {
+      printf("Out of memory C1! \n");
+      exit(1);
+   }
 
-//naive implementation 
+// naive implementation
 #ifdef TIMING
-  gettimeofday(&before, NULL); 
+   gettimeofday(&before, NULL);
 #endif
-for (r=0; r<REP; r++){
-   matrix_add(m,n,A,B,C);
-}
+   for (r = 0; r < REP; r++)
+   {
+      matrix_add(m, n, A, B, C);
+   }
 
 #ifdef TIMING
-  gettimeofday(&after, NULL);
-  printf("Reference code: %10.6f seconds \n", ((after.tv_sec + (after.tv_usec / 1000000.0)) -
-            (before.tv_sec + (before.tv_usec / 1000000.0)))/REP);
+   gettimeofday(&after, NULL);
+   printf("Reference code: %10.6f seconds \n", ((after.tv_sec + (after.tv_usec / 1000000.0)) -
+                                                (before.tv_sec + (before.tv_usec / 1000000.0))) /
+                                                   REP);
 
 #endif
-//matrix_mult_basic(m,n,p,A,B,D);
-//cmp(C,D, m*p);
+   // matrix_mult_basic(m,n,p,A,B,D);
+   // cmp(C,D, m*p);
 
 #ifdef GENERATE
- if ((fc = fopen("gen_result.mtx", "wt")) == NULL) exit(3); 
-#else 
- if ((fc = fopen(argv[3], "wt")) == NULL) exit(3); 
-#endif   
- write_sparse(fc,m,n,C);
- fclose(fc);  
+   if ((fc = fopen("gen_result.mtx", "wt")) == NULL)
+      exit(3);
+#else
+   if ((fc = fopen(argv[3], "wt")) == NULL)
+      exit(3);
+#endif
+   write_sparse(fc, m, n, C);
+   fclose(fc);
 
- free(A);
- free(B);
- free(C);
-
+   free(A);
+   free(B);
+   free(C);
 }
-
