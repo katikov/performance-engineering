@@ -20,7 +20,10 @@ APPS = matmul transpose
 
 all: $(APPS)
 
-matmul: matmul.c mmio.c
+matmul_before: matmul_before.c mmio.c
+	$(CXX) $(CXX_FLAGS) $(GENERATE) $(TIMING) -o $@ $^ $(LFLAGS)
+
+matmul_after: matmul_after.c mmio.c
 	$(CXX) $(CXX_FLAGS) $(GENERATE) $(TIMING) -o $@ $^ $(LFLAGS)
 
 transpose: transpose.c mmio.c
