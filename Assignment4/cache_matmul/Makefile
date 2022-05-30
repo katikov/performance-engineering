@@ -14,7 +14,7 @@ ifneq ($(SERIAL), 1)
 	CXX_FLAGS += $(PAR_FLAG)
 endif
 
-APPS = matmul transpose
+APPS = matmul_before matmul_after transpose
 
 .PHONY: all
 
