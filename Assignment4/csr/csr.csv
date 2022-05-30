@@ -1,0 +1,46 @@
+
+STRUCT,Info,3,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+CPU name:,Intel(R) Xeon(R) CPU E5-2630 v3 @ 2.40GHz,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+CPU type:,Intel Xeon Haswell EN/EP/EX processor,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+CPU clock:,2.39434789 GHz,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+TABLE,Region coo,Group 1 Raw,UOPS,7,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+Region Info,Core 0,Core 1,Core 2,Core 3,Core 4,Core 5,Core 6,Core 7,Core 8,Core 9,Core 10,Core 11,Core 12,Core 13,Core 14,Core 15,Core 16,Core 17,Core 18,Core 19,Core 20,Core 21,Core 22,Core 23,Core 24,Core 25,Core 26,Core 27,Core 28,Core 29,Core 30,Core 31,
+RDTSC Runtime [s],0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,
+call count,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+Event,Counter,Core 0,Core 1,Core 2,Core 3,Core 4,Core 5,Core 6,Core 7,Core 8,Core 9,Core 10,Core 11,Core 12,Core 13,Core 14,Core 15,Core 16,Core 17,Core 18,Core 19,Core 20,Core 21,Core 22,Core 23,Core 24,Core 25,Core 26,Core 27,Core 28,Core 29,Core 30,Core 31
+INSTR_RETIRED_ANY,FIXC0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+CPU_CLK_UNHALTED_CORE,FIXC1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+CPU_CLK_UNHALTED_REF,FIXC2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+UOPS_ISSUED_ANY,PMC0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+UOPS_EXECUTED_THREAD,PMC1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+UOPS_RETIRED_ALL,PMC2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+UOPS_ISSUED_FLAGS_MERGE,PMC3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+TABLE,Region coo,Group 1 Raw STAT,UOPS,7,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+Event,Counter,Sum,Min,Max,Avg,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+INSTR_RETIRED_ANY STAT,FIXC0,0,0,0,0,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+CPU_CLK_UNHALTED_CORE STAT,FIXC1,0,0,0,0,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+CPU_CLK_UNHALTED_REF STAT,FIXC2,0,0,0,0,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+UOPS_ISSUED_ANY STAT,PMC0,0,0,0,0,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+UOPS_EXECUTED_THREAD STAT,PMC1,0,0,0,0,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+UOPS_RETIRED_ALL STAT,PMC2,0,0,0,0,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+UOPS_ISSUED_FLAGS_MERGE STAT,PMC3,0,0,0,0,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+TABLE,Region coo,Group 1 Metric,UOPS,8,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+Metric,Core 0,Core 1,Core 2,Core 3,Core 4,Core 5,Core 6,Core 7,Core 8,Core 9,Core 10,Core 11,Core 12,Core 13,Core 14,Core 15,Core 16,Core 17,Core 18,Core 19,Core 20,Core 21,Core 22,Core 23,Core 24,Core 25,Core 26,Core 27,Core 28,Core 29,Core 30,Core 31,
+Runtime (RDTSC) [s],0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+Runtime unhalted [s],0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+Clock [MHz],nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,
+CPI,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,
+Issued UOPs,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+Merged UOPs,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+Executed UOPs,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+Retired UOPs,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+TABLE,Region coo,Group 1 Metric STAT,UOPS,8,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+Metric,Sum,Min,Max,Avg,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+Runtime (RDTSC) [s] STAT,0,0,0,0,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+Runtime unhalted [s] STAT,0,0,0,0,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+Clock [MHz] STAT,0,0,0,0,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+CPI STAT,0,0,0,0,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+Issued UOPs STAT,0,0,0,0,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+Merged UOPs STAT,0,0,0,0,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+Executed UOPs STAT,0,0,0,0,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+Retired UOPs STAT,0,0,0,0,,,,,,,,,,,,,,,,,,,,,,,,,,,,,

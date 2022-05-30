@@ -43,7 +43,7 @@ void csr_spmv_parallel(int m, const int *A_rows, const int *A_cols_idx, const fl
     }
 #pragma omp parallel
     {
-        LIKWID_MARKER_START("coo");
+        LIKWID_MARKER_START("csr");
 #pragma omp for private(i, j, row_start, row_end)
         for (i = 0; i < m; i++)
         {
@@ -58,6 +58,7 @@ void csr_spmv_parallel(int m, const int *A_rows, const int *A_cols_idx, const fl
 
             C[i] = tmp;
         }
+        LIKWID_MARKER_STOP("csr");
     }
     LIKWID_MARKER_CLOSE;
 }
