@@ -35,6 +35,7 @@ void csr_spmv_parallel(int m, const int *A_rows, const int *A_cols_idx, const fl
 {
     int i, j;
     int row_start, row_end;
+    omp_set_dynamic(0);
     omp_set_num_threads(32);
     LIKWID_MARKER_INIT;
 #pragma omp parallel

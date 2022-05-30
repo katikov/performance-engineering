@@ -24,6 +24,7 @@ void coo_spmv(int nz, const int *A_rows, const int *A_cols, const float *A_value
 void coo_spmv_parallel(int nz, const int *A_rows, const int *A_cols, const float *A_values, const float *B, float *C)
 {
     int i;
+    omp_set_dynamic(0);
     omp_set_num_threads(32);
     LIKWID_MARKER_INIT;
 #pragma omp parallel
