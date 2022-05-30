@@ -14,14 +14,18 @@ ifneq ($(SERIAL), 1)
 	CXX_FLAGS += $(PAR_FLAG)
 endif
 
-APPS = matadd transpose
+APPS = matadd_before matadd_after transpose
 
 .PHONY: all
 
 all: $(APPS)
 
-matadd: matadd.c mmio.c
+matadd_before: matadd_before.c mmio.c
 	$(CXX) $(CXX_FLAGS) $(GENERATE) $(TIMING) -o $@ $^ $(LFLAGS)
+
+matadd_after: matadd_after.c mmio.c
+	$(CXX) $(CXX_FLAGS) $(GENERATE) $(TIMING) -o $@ $^ $(LFLAGS)
+
 
 transpose: transpose.c mmio.c
 	$(CXX) $(CXX_FLAGS) $(GENERATE) -o $@ $^ $(LFLAGS)

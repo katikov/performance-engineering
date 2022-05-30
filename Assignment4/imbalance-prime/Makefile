@@ -12,15 +12,17 @@ ifneq ($(SERIAL), 1)
 	CXX_FLAGS += $(PAR_FLAG)
 endif
 
-APPS = prime 
+APPS = prime_before prime_after 
 
 .PHONY: all
 
 all: $(APPS)
 
-prime: prime.c
+prime_before: prime_before.c
 	$(CXX) $(CXX_FLAGS)  -o $@ $^ $(LFLAGS)
 
+prime_after: prime_after.c
+	$(CXX) $(CXX_FLAGS)  -o $@ $^ $(LFLAGS)
 
 .PHONY: clean
 clean:
