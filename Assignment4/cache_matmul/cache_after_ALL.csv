@@ -1,0 +1,67 @@
+STRUCT,Info,3
+CPU name:,Intel(R) Xeon(R) CPU E5-2630 v3 @ 2.40GHz,
+CPU type:,Intel Xeon Haswell EN/EP/EX processor,
+CPU clock:,2.394344133 GHz,
+TABLE,Group 1 Raw,ICACHE,7
+Event,Counter,Core 0
+INSTR_RETIRED_ANY,FIXC0,17067821478
+CPU_CLK_UNHALTED_CORE,FIXC1,5563278192
+CPU_CLK_UNHALTED_REF,FIXC2,4722828888
+ICACHE_ACCESSES,PMC0,154660482
+ICACHE_MISSES,PMC1,30238
+ICACHE_IFETCH_STALL,PMC2,347377
+ILD_STALL_IQ_FULL,PMC3,47682387
+TABLE,Group 1 Metric,ICACHE,11
+Metric,Core 0,
+Runtime (RDTSC) [s],2.0010,
+Runtime unhalted [s],2.3235,
+Clock [MHz],2820.4288,
+CPI,0.3260,
+L1I request rate,0.0091,
+L1I miss rate,1.771638e-06,
+L1I miss ratio,0.0002,
+L1I stalls,347377,
+L1I stall rate,2.035274e-05,
+L1I queue full stalls,47682387,
+L1I queue full stall rate,0.0028,
+STRUCT,Info,3
+CPU name:,Intel(R) Xeon(R) CPU E5-2630 v3 @ 2.40GHz,
+CPU type:,Intel Xeon Haswell EN/EP/EX processor,
+CPU clock:,2.394344133 GHz,
+TABLE,Group 2 Raw,L2CACHE,5
+Event,Counter,Core 0
+INSTR_RETIRED_ANY,FIXC0,455742835
+CPU_CLK_UNHALTED_CORE,FIXC1,256831956
+CPU_CLK_UNHALTED_REF,FIXC2,192642888
+L2_TRANS_ALL_REQUESTS,PMC0,432466
+L2_RQSTS_MISS,PMC1,90776
+TABLE,Group 2 Metric,L2CACHE,7
+Metric,Core 0,
+Runtime (RDTSC) [s],0.0925,
+Runtime unhalted [s],0.1073,
+Clock [MHz],3192.1453,
+CPI,0.5635,
+L2 request rate,0.0009,
+L2 miss rate,0.0002,
+L2 miss ratio,0.2099,
+STRUCT,Info,3
+CPU name:,Intel(R) Xeon(R) CPU E5-2630 v3 @ 2.40GHz,
+CPU type:,Intel Xeon Haswell EN/EP/EX processor,
+CPU clock:,2.394344133 GHz,
+TABLE,Group 3 Raw,L3CACHE,6
+Event,Counter,Core 0
+INSTR_RETIRED_ANY,FIXC0,0
+CPU_CLK_UNHALTED_CORE,FIXC1,0
+CPU_CLK_UNHALTED_REF,FIXC2,0
+MEM_LOAD_UOPS_RETIRED_L3_ALL,PMC0,0
+MEM_LOAD_UOPS_RETIRED_L3_MISS,PMC1,0
+UOPS_RETIRED_ALL,PMC2,0
+TABLE,Group 3 Metric,L3CACHE,7
+Metric,Core 0,
+Runtime (RDTSC) [s],0,
+Runtime unhalted [s],0,
+Clock [MHz],nan,
+CPI,nan,
+L3 request rate,nan,
+L3 miss rate,nan,
+L3 miss ratio,nan,
