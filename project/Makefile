@@ -15,13 +15,15 @@ ifneq ($(SERIAL), 1)
 	CXX_FLAGS += $(PAR_FLAG)
 endif
 
-APPS = fft
+APPS = fft fftstream
 
 .PHONY: all
 
 all: $(APPS)
 
 fft.o:		fft.cu
+		$(NVCC) $(CU_FLAGS) $(GENERATE) $(TIMING)  -c $< -o $@ $(LFLAGS)
+fftstream.o:		fftstream.cu
 		$(NVCC) $(CU_FLAGS) $(GENERATE) $(TIMING)  -c $< -o $@ $(LFLAGS)
 
 fft.ptx:		fft.cu
@@ -31,6 +33,9 @@ fft_cpu.o:		fft_cpu.cpp
 		$(CXX) $(CXX_FLAGS) $(GENERATE) $(TIMING)  -c $< -o $@ $(LFLAGS)
 
 fft: fft.o fft_cpu.o
+	$(NVCC) $(CU_FLAGS) $^ -o $@
+
+fftstream: fftstream.o fft_cpu.o
 	$(NVCC) $(CU_FLAGS) $^ -o $@
 
 .PHONY: clean

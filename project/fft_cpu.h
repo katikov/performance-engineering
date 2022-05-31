@@ -12,11 +12,11 @@ struct Complex{
 	double real, imag;
 };
 
-int* readImage(const char* filename, int *N, int *M);
+unsigned char* readImage(const char* filename, int *N, int *M);
 double* readGT(const char* filename, int *N, int *M);
 
-void fft2_basic(int* image, Complex* dft_image, int n, int m);
-void fft2_cpu(int* image, Complex* dft_image, int n, int m);
+void fft2_basic(unsigned char* image, Complex* dft_image, int n, int m);
+void fft2_cpu(unsigned char* image, Complex* dft_image, int n, int m);
 int getradix(int r, int* radix);
 
 #endif

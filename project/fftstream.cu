@@ -647,18 +647,21 @@ void  fft2_cuda_constant(int* image, Complex* dft_image, int* image_device, Comp
 }
 
 */
+unsigned char frame_HW3[DEFAULT_N][DEFAULT_M][3];
+unsigned char frame_3HW[3][DEFAULT_N][DEFAULT_M];
 
-void inline fft2_cuda_stream(unsigned char* image, Complex* dft_image, unsigned char* image_device, Complex* dft_device, int n, int m) {
+const int nstreams = 3;
+cudaStream_t streams[nstreams];
+int inline fft2_cuda_stream() {
+   const int n = 1080, m = 1920;
+   const int H=n, W=m;
    struct timeval before, after;
    //fft_cuda_constant_init();
-
-   const int nstreams = 2;
-   cudaStream_t streams[nstreams];
    unsigned char* image_device_stream[nstreams];
-   Complex* dft_image_stream[nstreams];
    Complex* dft_image_device_stream[nstreams];
+   Complex* dft_image_stream[nstreams];
+
    for(int i=0;i<nstreams;i++) {
-      cudaStreamCreate(&streams[i]);
       cudaMalloc((void **)&dft_image_device_stream[i], m*n*sizeof(Complex));
       cudaMalloc((void **)&image_device_stream[i], m*n*sizeof(char));
       dft_image_stream[i] = (Complex *)malloc(m*n*sizeof(Complex));
@@ -676,6 +679,8 @@ void inline fft2_cuda_stream(unsigned char* image, Complex* dft_image, unsigned 
    int* ex_bit_reversal_n; cudaMalloc((void **)&ex_bit_reversal_n, n*sizeof(int));
    Complex* wn_pows; cudaMalloc((void **)&wn_pows, n*sizeof(Complex));
 
+   
+
    int radix[3];
    assert(getradix(m, radix)==1);
    cudaMemcpy(radix_device_m, radix, 3*sizeof(int), cudaMemcpyHostToDevice);
@@ -686,33 +691,43 @@ void inline fft2_cuda_stream(unsigned char* image, Complex* dft_image, unsigned 
    cuda_fft_init<<<numBlocksRow ,numThreads>>>(n, radix_device_n, ex_bit_reversal_n, wn_pows);   
    cudaDeviceSynchronize();
 
-gettimeofday(&before, NULL);
+   
 
-   for(int i=0;i<REP;i++){
-      int stream_id = i%nstreams;
-      //cudaStreamSynchronize(streams[stream_id]);
-      // if(i>=nstreams)
-      //    cudaMemcpyAsync(dft_image_stream[i-nstreams], dft_image_device_stream[stream_id], m*n*sizeof(Complex), 
-      //                 cudaMemcpyDeviceToHost, streams[stream_id]);
-      cudaMemcpyAsync(dft_image_stream[stream_id], dft_image_device_stream[stream_id], m*n*sizeof(Complex), 
-                      cudaMemcpyDeviceToHost, streams[stream_id]);
+   gettimeofday(&before, NULL);
+    int x, y, count, frames=0;
+    // Open an input pipe from ffmpeg and an output pipe to a second instance of ffmpeg
+    FILE* pipein = popen("ffmpeg -i \"./validation/Validation (1).mp4\" -f image2pipe -pix_fmt rgb24 -vcodec rawvideo - 2> /dev/null", "r");
+    FILE* pipeout = popen("ffmpeg -y -f rawvideo -vcodec rawvideo -pix_fmt rgb24 -s 1920x1080 -r 24 -i - -f mp4 -q:v 5 -an -vcodec mpeg4 output.mp4", "w");
 
-      cudaMemcpyAsync(image_device_stream[stream_id], image, m*n*sizeof(char), cudaMemcpyHostToDevice, streams[stream_id]);
-      
-      fft_cuda_kernel_unroll<<<n, 64, m*sizeof(Complex), streams[stream_id]>>>(image_device_stream[stream_id], 
-                     dft_image_device_stream[stream_id], ex_bit_reversal_m, radix_device_m, wm_pows, n, m);
-      fft_cuda_kernel_col_unroll<<<m, 64, n*sizeof(Complex), streams[stream_id]>>>(dft_image_device_stream[stream_id], 
-                     ex_bit_reversal_n, radix_device_n, wn_pows, n, m);
-      // cudaMemcpyAsync(dft_image_stream[stream_id], dft_image_device_stream[stream_id], m*n*sizeof(Complex), 
-      //                cudaMemcpyDeviceToHost, streams[stream_id]);
-   }
-   for(int i=0;i<nstreams; i++){
-      int stream_id = (REP+i)%nstreams;
-      // cudaMemcpyAsync(dft_image_stream[REP+i-nstreams], dft_image_device_stream[stream_id], m*n*sizeof(Complex), 
-      //                 cudaMemcpyDeviceToHost, streams[stream_id]);
-      cudaMemcpyAsync(dft_image_stream[stream_id], dft_image_device_stream[stream_id], m*n*sizeof(Complex), 
-                      cudaMemcpyDeviceToHost, streams[stream_id]);
-   }
+    // Process video frames
+    
+    while (1)
+    {
+        count = fread(frame_HW3, 1, H * W * 3, pipein);
+        // If we didn't get a frame of video, we're probably at the end
+        if (count != H * W * 3) break;
+        for(int i=0;i<H;i++) for(int j=0;j<W;j++){
+           frame_3HW[0][i][j] =  frame_HW3[i][j][0];
+           frame_3HW[1][i][j] =  frame_HW3[i][j][1];
+           frame_3HW[2][i][j] =  frame_HW3[i][j][2];
+        }
+        cudaDeviceSynchronize();
+        for(int i=0;i<3;i++){
+            cudaMemcpyAsync(image_device_stream[i], frame_3HW[i], m*n*sizeof(char), cudaMemcpyHostToDevice, streams[i]);
+            fft_cuda_kernel_unroll<<<n, 64, m*sizeof(Complex), streams[i]>>>(image_device_stream[i], 
+                           dft_image_device_stream[i], ex_bit_reversal_m, radix_device_m, wm_pows, n, m);
+            fft_cuda_kernel_col_unroll<<<m, 64, n*sizeof(Complex), streams[i]>>>(dft_image_device_stream[i], 
+                           ex_bit_reversal_n, radix_device_n, wn_pows, n, m);
+
+            // retrieving back
+            // cudaMemcpyAsync(dft_image_stream[i], dft_image_device_stream[i], m*n*sizeof(Complex), 
+            //                cudaMemcpyDeviceToHost, streams[i]);
+        }
+        frames++;
+    }
+    printf("%d\n", frames);
+    // Flush and close input and output pipes
+
    cudaDeviceSynchronize();
    
    gettimeofday(&after, NULL);
@@ -721,122 +736,45 @@ gettimeofday(&before, NULL);
    
    cudaFree(radix_device_m);cudaFree(ex_bit_reversal_m);cudaFree(wm_pows);
    cudaFree(radix_device_n);cudaFree(ex_bit_reversal_n);cudaFree(wn_pows);
-   memcpy(dft_image, dft_image_stream[0], m*n*sizeof(Complex));
+
    for(int i=0;i<nstreams;i++) {
-      //cudaStreamCreate(&streams[i]);
       free(dft_image_stream[i]);
       cudaFree(dft_image_device_stream[i]);
       cudaFree(image_device_stream[i]);
    }
-   
+    fflush(pipein);
+    pclose(pipein);
+    fflush(pipeout);
+    pclose(pipeout);
+    return frames;
 }
 
-unsigned char frame[DEFAULT_N][DEFAULT_M][3];
-int test_stream(){
-   int size = DEFAULT_N*DEFAULT_M*3;
-   for(int i=0;i<REP;i++){
-      for(int i=0;i<size;i++){
-         ((char*)(frame))[i] = rand()%256;
-      }
-   }
 
-   return 0;
-
-}
 int main (int argc, char** argv) {
    struct timeval before, after;
-   int m, n;
-   unsigned char* image = NULL;
-   double* GT = NULL;
- 
-   if (argc > 3) {
-      fprintf(stderr, "Usage: %s [martix1] [groundtruthmatrix] \n", argv[0]);
-      exit(1);
-   }
-   else {
-      if(argc >= 2){
-         image = readImage(argv[1], &n, &m);
-      }else{
-         n = DEFAULT_N; m = DEFAULT_M;
-         // n = 1; m = 120;
-         image = generate_mat(n, m);
-      }
-      if(argc==3){
-         int _m, _n;
-         GT = readGT(argv[2], &_n, &_m);
-         if(n!=_n  or m!=_m){
-            printf("Size error! \n"); 
-            exit(1);
-         }
-      }
-   }
-
-   Complex* dft_image = (Complex *)malloc(m*n*sizeof(Complex));
-   Complex* dft_image2 = (Complex *)malloc(m*n*sizeof(Complex));
-   if(dft_image == NULL){
-      printf("Out of memory! \n");
-      exit(-1);
-   }
-   Complex* dft_device;
-   unsigned char* image_device;
-   cudaMalloc((void **)&dft_device, m*n*sizeof(Complex));
-   cudaMalloc((void **)&image_device, m*n*sizeof(char));
-
-
-//    cufftHandle plan;
-//    cufftPlan2d(&plan, n, m, CUFFT_Z2Z);
-
-//    cufftDoubleComplex *idata, *odata;
-//    cudaMalloc((void**)&idata, sizeof(cufftDoubleComplex)*m*n);
-//    cudaMalloc((void**)&odata, sizeof(cufftDoubleComplex)*m*n);
-//    cufftDoubleComplex *CompData = (cufftDoubleComplex*) malloc(m*n*sizeof(cufftDoubleComplex));
-//    for(int i=0; i<m*n; i++){
-//       CompData[i].x = image[i]; CompData[i].y=0;
-//    }
-// cudaMemcpy(idata, CompData, m*n * sizeof(cufftDoubleComplex), cudaMemcpyHostToDevice);
-
-   // for(int i=0;i<REP; i++)
-   //    fft2_cufft(idata, odata, CompData, &plan,dft_image2, n, m);
-   // fft_cuda_constant_init();
-   // for(int i=0;i<REP; i++)
-   //    fft2_cuda_constant(image, dft_image2, image_device, dft_device);
 
    gettimeofday(&before, NULL); 
 
-   // for(int i=0;i<REP; i++)
-   //    fft2_cuda_basic(image, dft_image2, image_device, dft_device, n, m);
-   // for(int i=0;i<REP; i++)
-   //    fft2_cuda(image, dft_image2, image_device, dft_device, n, m);
-   for(int i=0;i<REP; i++)
-     fft2_cuda_unroll(image, dft_image2, image_device, dft_device, n, m);
-   // fft2_cuda_stream(image, dft_image2, image_device, dft_device, n, m);
+   int frames = fft2_cuda_stream();
    
    //fft2_basic(image, dft_image2, n, m);
    gettimeofday(&after, NULL);
+
 //    cufftDestroy(plan);
 // cudaFree(idata);
 //    cudaFree(odata);
 //    free(CompData);
 
-   fft2_cpu(image, dft_image, n, m);
+   // for(int i=0;i<REP;i++){
+   //    fft2_cpu(image+i*n*m, dft_image+i*n*m, n, m);
+   //    cmp((double*)(dft_image+i*n*m), (double*)(dft_image2+i*n*m), n*m*2);
+   // }
 
    // printf("GT:\n");
    // for(int i=0;i<m;i++)printf("%lf+%lfj ", dft_image[i].real, dft_image[i].imag); printf("\n");
-
-   cmp((double*)dft_image, (double*)dft_image2, n*m*2);
-   if(argc == 3){
-      cmp((double*)dft_image, GT, n*m*2);
-      free(GT);
-   }
-
-   printf("Exec time per frame: %.6f seconds \n", ((after.tv_sec + (after.tv_usec / 1000000.0)) -
-               (before.tv_sec + (before.tv_usec / 1000000.0)))/REP);
-   printf("Computation time: %.6f seconds \n", computation_time/REP);
-   free(dft_image);
-   free(dft_image2);
-   free(image);
-   cudaFree(image_device);
-   cudaFree(dft_device);
+   printf("Total frames: %d\n", frames);
+   printf("Total exec time: %.6f seconds \n", ((after.tv_sec + (after.tv_usec / 1000000.0)) -
+               (before.tv_sec + (before.tv_usec / 1000000.0))));
    return 0;
 }
 

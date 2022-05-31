@@ -18,8 +18,8 @@
 
 const double pi = acos(-1);
 
-int* readImage(const char* filename, int *N, int *M){
-    int* img;
+unsigned char* readImage(const char* filename, int *N, int *M){
+    unsigned char* img;
     FILE* fp = fopen(filename, "r");
     if(fp==NULL){
         printf("image file error!\n");
@@ -29,15 +29,17 @@ int* readImage(const char* filename, int *N, int *M){
         exit(-1);
     }
     int size = (*N) * (*M);
-    img = (int*)malloc(size*sizeof(int));
+    img = (unsigned char*)malloc(size*sizeof(char));
     if(img==NULL){
         printf("Out of memory! \n");
         exit(-1);
     }
     for(int i=0;i<size; i++){
-        if(fscanf(fp, "%d", &img[i])<=0){
+        int temp;
+        if(fscanf(fp, "%d", &temp)<=0){
             exit(-1);
         }
+        img[i] = temp;
     }
     fclose(fp);
     
@@ -91,7 +93,7 @@ inline Complex wx(int x){
     return Complex{cos(2*pi/x), -sin(2*pi/x)};
 }
 
-void fft2_basic(int* image, Complex* dft_image, int n, int m){
+void fft2_basic(unsigned char* image, Complex* dft_image, int n, int m){
     Complex wm = wx(m), wn = wx(n);
     Complex wm_pows[m];
     Complex wn_pows[n];
@@ -100,7 +102,7 @@ void fft2_basic(int* image, Complex* dft_image, int n, int m){
     for(int i=1;i<n;i++) wn_pows[i] = wn_pows[i-1]*wn;
 
     for(int i=0;i<n;i++){
-        int* image_line = image + i*m;
+        unsigned char* image_line = image + i*m;
         Complex* dft_line = dft_image + i*m;
         for(int j=0;j<m;j++){
             Complex res{0,0};
@@ -178,7 +180,7 @@ inline void fft1(int radix[3], Complex* dft_line, Complex* wm_pows, int m){
 
 }
 
-void fft2_cpu(int* image, Complex* dft_image, int n, int m){
+void fft2_cpu(unsigned char* image, Complex* dft_image, int n, int m){
     int radix[3]; // assuming maximal prime factor is 5
     assert(getradix(m, radix)==1);
     int ex_bit_reversal_m[m], ex_bit_reversal_n[n];
@@ -196,7 +198,7 @@ void fft2_cpu(int* image, Complex* dft_image, int n, int m){
 
 
     for(int i=0;i<n;i++){
-        int* image_line = image + i*m;
+        unsigned char* image_line = image + i*m;
         Complex* dft_line = dft_image + i*m;
         for(int j=0;j<m;j++) dft_line[j] = Complex{(double)image_line[ex_bit_reversal_m[j]], 0};
 
