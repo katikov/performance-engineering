@@ -1,0 +1,20 @@
+Total frames: 200
+Computation time: 3.388879 seconds 
+Total frames: 200
+Computation time: 3.325581 seconds 
+Total frames: 200
+Computation time: 3.338610 seconds 
+Total frames: 200
+Computation time: 3.268345 seconds 
+Total frames: 200
+Computation time: 3.388024 seconds 
+Total frames: 200
+Computation time: 3.361995 seconds 
+Total frames: 200
+Computation time: 3.316945 seconds 
+Total frames: 200
+Computation time: 3.401597 seconds 
+Total frames: 200
+Computation time: 3.255514 seconds 
+Total frames: 200
+Computation time: 3.311511 seconds 

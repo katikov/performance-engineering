@@ -1,0 +1,20 @@
+Total frames: 899
+Computation time: 10.487672 seconds 
+Total frames: 899
+Computation time: 10.302199 seconds 
+Total frames: 899
+Computation time: 10.367760 seconds 
+Total frames: 899
+Computation time: 10.503750 seconds 
+Total frames: 899
+Computation time: 10.815088 seconds 
+Total frames: 899
+Computation time: 10.672177 seconds 
+Total frames: 899
+Computation time: 10.126540 seconds 
+Total frames: 899
+Computation time: 10.387173 seconds 
+Total frames: 899
+Computation time: 10.561535 seconds 
+Total frames: 899
+Computation time: 10.359953 seconds 

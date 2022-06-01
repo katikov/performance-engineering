@@ -800,38 +800,43 @@ int main (int argc, char** argv) {
    // fft_cuda_constant_init();
    // for(int i=0;i<REP; i++)
    //    fft2_cuda_constant(image, dft_image2, image_device, dft_device);
-
+   unsigned char* image2 = generate_mat(n, m);
    gettimeofday(&before, NULL); 
 
    // for(int i=0;i<REP; i++)
    //    fft2_cuda_basic(image, dft_image2, image_device, dft_device, n, m);
    // for(int i=0;i<REP; i++)
    //    fft2_cuda(image, dft_image2, image_device, dft_device, n, m);
+   // for(int i=0;i<REP/2; i++){
+   //   fft2_cuda_basic(image, dft_image2, image_device, dft_device, n, m);
+   //   fft2_cuda_basic(image2, dft_image2, image_device, dft_device, n, m);
+   // }
    for(int i=0;i<REP; i++)
      fft2_cuda_unroll(image, dft_image2, image_device, dft_device, n, m);
    // fft2_cuda_stream(image, dft_image2, image_device, dft_device, n, m);
    
-   //fft2_basic(image, dft_image2, n, m);
+   // fft2_basic(image, dft_image2, n, m);
+   // fft2_cpu(image, dft_image, n, m);
    gettimeofday(&after, NULL);
 //    cufftDestroy(plan);
 // cudaFree(idata);
 //    cudaFree(odata);
 //    free(CompData);
 
-   fft2_cpu(image, dft_image, n, m);
+   //fft2_cpu(image, dft_image, n, m);
 
    // printf("GT:\n");
    // for(int i=0;i<m;i++)printf("%lf+%lfj ", dft_image[i].real, dft_image[i].imag); printf("\n");
 
-   cmp((double*)dft_image, (double*)dft_image2, n*m*2);
-   if(argc == 3){
-      cmp((double*)dft_image, GT, n*m*2);
-      free(GT);
-   }
+   // cmp((double*)dft_image, (double*)dft_image2, n*m*2);
+   // if(argc == 3){
+   //    cmp((double*)dft_image, GT, n*m*2);
+   //    free(GT);
+   // }
 
-   printf("Exec time per frame: %.6f seconds \n", ((after.tv_sec + (after.tv_usec / 1000000.0)) -
-               (before.tv_sec + (before.tv_usec / 1000000.0)))/REP);
-   printf("Computation time: %.6f seconds \n", computation_time/REP);
+   printf("Exec time: %.6f seconds \n", ((after.tv_sec + (after.tv_usec / 1000000.0)) -
+               (before.tv_sec + (before.tv_usec / 1000000.0))));
+   printf("Computation time: %.6f seconds \n", computation_time);
    free(dft_image);
    free(dft_image2);
    free(image);

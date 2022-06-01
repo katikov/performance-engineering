@@ -696,7 +696,7 @@ int inline fft2_cuda_stream() {
    gettimeofday(&before, NULL);
     int x, y, count, frames=0;
     // Open an input pipe from ffmpeg and an output pipe to a second instance of ffmpeg
-    FILE* pipein = popen("ffmpeg -i \"./validation/Validation (1).mp4\" -f image2pipe -pix_fmt rgb24 -vcodec rawvideo - 2> /dev/null", "r");
+    FILE* pipein = popen("ffmpeg -i \"./validation/Validation (15).mp4\" -f image2pipe -pix_fmt rgb24 -vcodec rawvideo - 2> /dev/null", "r");
     FILE* pipeout = popen("ffmpeg -y -f rawvideo -vcodec rawvideo -pix_fmt rgb24 -s 1920x1080 -r 24 -i - -f mp4 -q:v 5 -an -vcodec mpeg4 output.mp4", "w");
 
     // Process video frames
@@ -725,7 +725,6 @@ int inline fft2_cuda_stream() {
         }
         frames++;
     }
-    printf("%d\n", frames);
     // Flush and close input and output pipes
 
    cudaDeviceSynchronize();
@@ -773,7 +772,7 @@ int main (int argc, char** argv) {
    // printf("GT:\n");
    // for(int i=0;i<m;i++)printf("%lf+%lfj ", dft_image[i].real, dft_image[i].imag); printf("\n");
    printf("Total frames: %d\n", frames);
-   printf("Total exec time: %.6f seconds \n", ((after.tv_sec + (after.tv_usec / 1000000.0)) -
+   printf("Computation time: %.6f seconds \n", ((after.tv_sec + (after.tv_usec / 1000000.0)) -
                (before.tv_sec + (before.tv_usec / 1000000.0))));
    return 0;
 }
